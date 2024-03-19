@@ -1,0 +1,284 @@
+body{
+    /* background-image: url('../../assets/background.png'); 
+    background-size: cover; 
+    background-position: center; 
+    background-repeat: no-repeat; */
+    background-color: white;
+}
+
+.admin-Home_Con {
+    display: flex;
+    height: 100vh; /* Ensure full height of viewport */
+    width: 100wh;
+    
+}
+.sidebar {
+    width: 250px; /* Sidebar width */
+    background-color: #f14d4d; /* Sidebar background color */
+    color: #fff; /* Sidebar text color */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+   z-index: 1;
+}
+.sidebar button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.content {
+    flex-grow: 1; /* Allow content to grow to fill remaining space */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+    /* background-color: red; */
+    width: 100%;
+}
+.tab-container{
+    width: 80%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    /* background-color: aqua; */
+   
+}
+.sidebar button:hover {
+    background-color: #444; /* Change to your desired hover background color */
+}
+
+.sidebar button:focus {
+    outline: none; /* Remove the default focus outline */
+}
+.sidebar {
+    /* Sidebar styles */
+    width: 250px;
+    background-color: #333;
+    color: #fff;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    transition: transform 0.3s ease; /* Add smooth transition effect */
+}
+.content {
+    /* Main content styles */
+    /* flex-grow: 1; */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    transition: width 0.3s ease; /* Add smooth transition effect */
+    width: 100vw; /* Initial width with sidebar open */
+    /* background-color: rebeccapurple; */
+}
+
+
+.sidebar-logo{
+    height: 10%;
+    /* background-color: blue; */
+}
+.sidebar-navigations{
+    height: 80%;
+    /* background-color: red; */
+}
+.sidebar-navigations span{
+    height: 20%;
+    width: 100%;
+}
+.sidebar-logout{
+    height: 10%;
+    /* background-color: aqua; */
+}
+.home-logo{
+    width: 100%;
+    height: 100%;
+}
+.sidebar-line{
+    margin: auto;
+    width: 80%;
+    border-bottom: 2px solid rgb(222, 116, 23);
+    margin-bottom: 4%;
+}
+.home-background-template {
+    width: 50vw; /* Adjust the width and height as needed */
+    height: 50vw; /* Adjust the width and height as needed */
+    background-color: #efefef; /* Change to your desired color */
+    position: absolute;
+    top: 10;
+    left: -10vw;
+    outline: none;
+    border-radius: 45px;
+    transform: rotate(45deg); /* Rotate the diamond */
+  }
+  
+  .home-background-template-inner {
+    width: 90%; /* Adjust the size of the inner diamond as desired */
+    height: 90%; /* Adjust the size of the inner diamond as desired */
+    /* background: linear-gradient(to bottom left, rgba(45, 14, 223, 0), rgb(64, 5, 255)); */
+    background-color: #4588d4;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 45px;
+    border: 1px solid rgb(59, 58, 58);
+    transform: translate(-50%, -50%) rotate(90deg); /* Rotate the inner diamond */
+  }
+  .upload-sub-menus{
+    padding-left: 6%;
+    width: 90%;
+    font-size: 90%;
+    transition: max-height 0.3s ease-out;
+
+  }
+  .toggle-icon-con{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* background-color: red; */
+    width: 100%;
+    position: relative;
+  }
+  .toggle-icon-con span{
+    top: 20%;
+    right: 0;
+    width: 20%;
+    position: absolute;
+    /* background-color: rgb(0, 30, 255); */
+  }
+  .voting-time-con{
+    margin-top: 5%;
+    background-color: rgb(239, 246, 251);
+    height: 70%;
+    width: 70%;
+    display: block;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    /* background-color: red; */
+  }
+  .side-button{
+    margin-top: 5%;
+    background-color: #f14d4d;
+    height: 60%;
+    width: 5%;
+    display: block;
+  }
+  .side-button-start{
+    width: 100%;
+    height: 20%;
+    background-color: #4588d4;
+  }
+
+  .side-button-update{
+    width: 100%;
+    height: 20%;
+    background-color: #4588d4;
+  }
+  .voting-time{
+    /* background-color: rgb(153, 109, 51); */
+    height: 80%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .voting-time-button{
+    /* background-color: rgb(51, 153, 71); */
+    height: 20%;
+    width: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+  }
+  /** Add voting date*/
+  .add-voting{
+    height: 95%;
+    width: 90%;
+    /* background-color: red; */
+    display: flex;
+  }
+  .add-voting-start, 
+  .add-voting-end{
+    margin: auto;
+    height: 100%;
+    width: 50%;
+    /* background-color: #535f6c; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .add-voting-start-input,
+  .add-voting-end-input{
+    display: block;
+    width: 70%;
+    /* background-color: #f14d4d; */
+    height: 50%;
+  }
+  .add-voting-start input,
+  .add-voting-end input{
+    outline: none;
+    font-size: 14px;
+    font-weight: 400;
+    color: #333;
+    border-radius: 5px;
+    /* border: 1px solid #aaa; */
+    height: 40px;
+    margin-left: 7px;
+    width: 90%;
+    cursor: pointer;
+    margin: 2% 1%;
+}
+.add-voting-start label,
+.add-voting-end label{
+    font-size: 20px;
+}
+
+/**Buttons*/
+.voting-time-button-add{
+    border: 2px solid rgb(99, 99, 237);
+    background-color: rgb(99, 99, 237);
+    border-radius: 0px;
+    color: rgb(247, 245, 245);
+    font-size: 15px;
+    margin-left: 4%;
+    width: 20%;
+    border-radius: 3px;
+    text-align: center;
+}
+.voting-time-button-stop{
+    border: 2px solid rgb(237, 129, 99);
+    background-color:  rgb(237, 129, 99);
+    border-radius: 0px;
+    color: rgb(247, 245, 245);
+    font-size: 15px;
+    margin-left: 4%;
+    width: 20%;
+    border-radius: 3px;
+    text-align: center;
+}
+.voting-time-button-stop:hover{
+    border: 2px solid rgb(231, 77, 34);
+    background-color:  rgb(231, 77, 34);
+    color: rgb(255, 255, 255);
+}
+/**Update Member*/
+.update-member-time-con{
+  background-color: rgb(239, 246, 251);
+  height: 100%;
+  width: 100%;
+  display: block;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background-color: red;
+}
+.update-member-time-con{
+  width: 90%;
+  height: 50%;
+  background-color: #efefef;
+}

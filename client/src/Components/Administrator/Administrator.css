@@ -1,0 +1,107 @@
+.Administrator-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: rgb(250, 250, 250);
+    width: 100vw
+  }
+  
+  .Administrator-form {
+    background-color: #ffffff;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    max-width: 100vw; /* Set maximum width to cover entire screen */
+    width: 30%; /* Ensure the form takes up the full width of its container */
+    /* background-color: red; */
+    height: 55%;
+    z-index: 1;
+  }
+  
+  .Administrator-form-group {
+    height: 20%;
+    margin-bottom: 20px;
+    /* background-color: #4d95e1; */
+  }
+  .Administrator-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    margin-left: 10%;
+  }
+  .Administrator-form-group input {
+    font-size: 100%;
+    width: 75%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-left: 10%;
+    height: 40%;
+    /* background-color: red; */
+  }
+  .Administrator-form-group-button{
+    /* background-color: red; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .Administrator-button {
+    margin-top: 20px;
+    width: 70%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background-color: #4d95e1;
+    color: white;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  .form-group-otp{
+    margin: auto;
+    width: 70%;
+    text-align: right;
+  }
+  .link-to-otp{
+    font-size: 14px;
+    font-style: italic;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .Administrator-form-group-otp-back{
+    margin: auto;
+    margin-top: 5%;
+    width: 80%;
+    text-align: left;
+  }
+  /* Media query for smaller screens */
+@media screen and (max-width: 1023px) {
+  .Administrator-form {
+    padding: 15px; /* Decrease padding */
+    width: 35%; 
+  }
+}
+@media screen and (max-width: 768px) {
+  .Administrator-form {
+    padding: 15px; /* Decrease padding */
+    width: 55%; 
+  }
+}
+@media screen and (max-width: 480px) {
+  .Administrator-form {
+    padding: 10px; /* Decrease padding */
+    width: 55%; 
+  }
+  .Administrator-form-group {
+    /* font-size: 100%; */
+    width: 75%;
+    padding: 1px;
+    /* border: 1px solid #ccc; */
+    border-radius: 6px;
+    margin-left: 10%;
+    height: 15%;
+    /* background-color: red; */
+  }
+}

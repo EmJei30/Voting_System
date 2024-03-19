@@ -1,0 +1,59 @@
+-- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
+--
+-- Host: localhost    Database: election_system
+-- ------------------------------------------------------
+-- Server version	8.0.33
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `candidates`
+--
+
+DROP TABLE IF EXISTS `candidates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `candidates` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `Candidate_Name` varchar(255) DEFAULT NULL,
+  `Candidate_Position` varchar(255) DEFAULT NULL,
+  `Candidate_Address` varchar(255) DEFAULT NULL,
+  `Candidate_Incumbent` varchar(255) DEFAULT NULL,
+  `Reserved_Position` varchar(255) DEFAULT NULL,
+  `Image_File` varchar(500) DEFAULT NULL,
+  `Vote_Count` int DEFAULT NULL,
+  `Created_At` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `Updated_At` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `candidates`
+--
+
+LOCK TABLES `candidates` WRITE;
+/*!40000 ALTER TABLE `candidates` DISABLE KEYS */;
+INSERT INTO `candidates` VALUES (1,'Mateo, Arsula Porecema','BOARD OF DIRECTORS',NULL,NULL,NULL,'Mateo, Arsula Porecema.png',3,'2024-03-12 12:20:32','2024-03-19 02:52:24'),(2,'Salvador, Jaqueline','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 02:52:24'),(3,'Ladignon, Evelyn','BOARD OF DIRECTORS',NULL,NULL,NULL,'Ladignon, Evelyn.png',1,'2024-03-12 12:20:32','2024-03-19 02:52:24'),(4,'Labios, Florida','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(5,'Fernandez, Nieves','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 02:52:24'),(6,'Sebastian, Leticia','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 02:52:24'),(7,'Eglio, Edgar P.','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 03:16:27'),(8,'Pascua, Arthur B.','BOARD OF DIRECTORS',NULL,NULL,NULL,'Pascua, Arthur B..png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(9,'Montano, Raquel','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(10,'Sunio, Eufrosina M.','BOARD OF DIRECTORS',NULL,NULL,NULL,'Sunio, Eufrosina M..png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(11,'Consigna, Ronnie','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-18 07:29:07'),(12,'Balauag, Carmelita D.','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-18 07:29:07'),(13,'Sales, Elarde','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(14,'Dumlao, Joycee Lyn R.','BOARD OF DIRECTORS',NULL,NULL,NULL,'Dumlao, Joycee Lyn R..png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(15,'Guillermo, Rosalinda','BOARD OF DIRECTORS',NULL,NULL,NULL,'Guillermo, Rosalinda S..png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(16,'De Vera, Charito','BOARD OF DIRECTORS',NULL,NULL,NULL,'De Vera, Charito S..png',2,'2024-03-12 12:20:32','2024-03-19 02:58:05'),(17,'Hummer, Lourder','BOARD OF DIRECTORS',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(18,'Baguiwong, Ernesto B.','ELECTION COMMITTEE',NULL,NULL,NULL,'Baguiwong, Ernesto B..png',2,'2024-03-12 12:20:32','2024-03-19 00:25:01'),(19,'Victoriano, Luzviminda R.','ELECTION COMMITTEE',NULL,NULL,NULL,'Victoriano, Luzviminda R..png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(20,'Comienda, Leila Gaygay','ELECTION COMMITTEE',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 03:16:27'),(21,'Mapalo, Lilibeth','ELECTION COMMITTEE',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 01:58:04'),(22,'Andres, Esmeralda C.','ELECTION COMMITTEE',NULL,NULL,NULL,'Andres, Esmeralda C..png',1,'2024-03-12 12:20:32','2024-03-19 01:58:04'),(23,'Ramiro, Jesusita M.','ELECTION COMMITTEE',NULL,NULL,NULL,'Ramiro, Jesusita M..png',1,'2024-03-12 12:20:32','2024-03-19 01:58:04'),(24,'Guzman, Mary Jane','ELECTION COMMITTEE',NULL,NULL,NULL,'Guzman, Mary Jane.png',2,'2024-03-12 12:20:32','2024-03-19 02:58:05'),(25,'Javier, Susana B.','AUDIT COMMITTEE',NULL,NULL,NULL,'Javier, Susana B..png',2,'2024-03-12 12:20:32','2024-03-19 00:25:01'),(26,'Bernardo, Ofelia','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(27,'Roberts, William','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 03:16:27'),(28,'Nicolas, Joe S.','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(29,'Hamili, Lea','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-19 00:22:22'),(30,'Malana, Amy F.','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',NULL,'2024-03-12 12:20:32','2024-03-18 07:29:07'),(31,'Badua, Tenie E.','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',1,'2024-03-12 12:20:32','2024-03-19 01:58:04'),(32,'Tadena, Milagros L.','AUDIT COMMITTEE',NULL,NULL,NULL,'No_Image.png',3,'2024-03-12 12:20:32','2024-03-19 02:58:05'),(33,'Guzman, Mary Jane','AUDIT COMMITTEE',NULL,NULL,NULL,'Guzman, Mary Jane.png',1,'2024-03-12 12:20:32','2024-03-19 01:58:04');
+/*!40000 ALTER TABLE `candidates` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2024-03-19 17:04:42

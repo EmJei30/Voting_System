@@ -1,0 +1,811 @@
+.WinningCandidates-tab-body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .WinningCandidates-tab-body::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .WinningCandidates-tab-body::-webkit-scrollbar-thumb {
+    background-color: rgb(123, 182, 234);
+    outline: 1px solid rgb(83, 137, 190);
+  }
+/***/
+.WinningCandidates-tab-body-selected::-webkit-scrollbar {
+    width: 5px;
+    height: 8px;
+  }
+  
+  .WinningCandidates-tab-body-selected::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .WinningCandidates-tab-body-selected::-webkit-scrollbar-thumb {
+    background-color: rgb(123, 182, 234);
+    outline: 1px solid rgb(83, 137, 190);
+  }
+/**/
+  .WinningCandidates-tab-body-list::-webkit-scrollbar {
+    width: 5px;
+    height: 8px;
+  }
+  
+  .WinningCandidates-tab-body-list::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .WinningCandidates-tab-body-list::-webkit-scrollbar-thumb {
+    background-color: rgb(123, 182, 234);
+    outline: 1px solid rgb(83, 137, 190);
+  }
+  /***/
+ 
+  .WinningCandidates-confirmation-details::-webkit-scrollbar {
+    width: 5px;
+    height: 8px;
+  }
+  
+  .WinningCandidates-confirmation-details::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .WinningCandidates-confirmation-details::-webkit-scrollbar-thumb {
+    background-color: rgb(123, 182, 234);
+    outline: 1px solid rgb(83, 137, 190);
+  }
+body{
+    background-color: rgb(255, 255, 255);
+}
+  /**/
+.WinningCandidates-Home_Con{
+    width: 100vw;
+    height:99vh;
+    /* background-color: rgb(216, 31, 31); */
+    position: relative;
+}
+
+/**aler message*/
+.WinningCandidates-Home_Con-alert{
+    width: 100vw;
+    height:99vh;
+    background-color: rgba(204, 178, 178, 0.4);
+    position: absolute;
+}
+.WinningCandidates-tab-container-span{
+    height: 5%;
+}
+/**confirmation message*/
+.WinningCandidates-Home_Con-confirmation{
+    width: 100vw;
+    height:99vh;
+    background-color: rgba(204, 178, 178, 0.4);
+    position: absolute;
+}
+
+.WinningCandidates-nav-container{
+    margin: auto;
+    width: 100%;
+    height: 5%;
+    background-color: rgb(6, 6, 76);
+    display: flex;
+    align-items: center;
+    align-content: center;
+}
+.WinningCandidates-tab-container{
+    margin: auto;
+    width: 100%;
+    height: 93%;
+    display: block;   
+     /* background-color: rgb(53, 53, 190); */
+}
+.WinningCandidates-tab-container-con{
+    /* background-color: rgb(67, 190, 53); */
+    height: 9%;
+    display: flex;
+   justify-content: end;
+   align-items: center;
+   color: rgb(101, 91, 239);
+   font-weight: bold;
+   width: 90%;
+   margin: auto;
+   border-bottom: 2px solid blue;
+   margin-bottom: 1%;
+}
+.WinningCandidates-tab-container-con-name{
+    /* background-color: red; */
+    width: 40%;
+    text-align: end;
+    margin: 0 2%;
+
+}    
+.WinningCandidates-tab-container-con-button span{
+   
+    cursor: pointer;
+    /* text-decoration: underline; */
+}
+.WinningCandidates-tab-container-con-button span:hover{
+   /* background-color: brown; */
+   color: blue;
+    /* text-decoration: underline; */
+}
+.WinningCandidates-tab-header{
+    display: flex;
+}
+.WinningCandidates-tab-content{
+    margin: auto;
+    width: 90%;
+}
+.WinningCandidates-tab-body{
+    width: 100%;
+    height: 95%;
+    display: flex;
+ 
+    /* background-color: rgb(241, 236, 236); */
+}
+.WinningCandidates-tab-body-selected{
+    width: 100%;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.WinningCandidates-tab-body-list {
+    flex: 0 0 65%; /* Set the width to 60% and don't allow it to grow or shrink */ 
+    /* background-color: rgb(0, 119, 255); */
+    overflow-y: auto; /* Add vertical scroll if needed */
+    height: 98%;
+}
+.WinningCandidates-position-container {
+    width: 100%;
+    padding: 0 15px;
+    box-sizing: border-box;
+    /* background-color: blueviolet; */
+}
+.WinningCandidates-position-container-selected {
+    width: 18%; /* For desktop, show 2 candidates per row */
+    height: 230px; 
+    padding: 10px;
+    box-sizing: border-box;
+    /* border: 1px solid rgb(108, 108, 109); */
+    margin: 1% 1%;
+}
+.WinningCandidates-position-list {
+    display: flex;
+    flex-wrap: wrap;
+    /* background-color: rgb(115, 0, 255); */
+    width: 100%;
+}
+.WinningCandidates-position-list-selected {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    /* background-color: rgb(115, 0, 255); */
+    width: 100%;
+}
+.WinningCandidates-candidate-list {
+    width: 22%; /* For desktop, show 2 candidates per row */
+    height: auto;
+    padding: 5px;
+    box-sizing: border-box;
+    border: 1px solid blue;
+    margin: 1% 1%;
+    
+    /* background-color: #3728a3; */
+}
+.WinningCandidates-candidate-list-selected {
+    width: 18%; /* For desktop, show 2 candidates per row */
+    height: 230px; 
+    padding: 10px;
+    box-sizing: border-box;
+    /* border: 1px solid rgb(108, 108, 109); */
+    margin: 1% 1%;
+
+}
+.WinningCandidates-candidate-image-container{
+    /* background-color: antiquewhite; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 75%;
+    /* border: none; */
+}
+
+.candidate-name-container2{
+    text-align: center;
+    font-size: 14px;
+}
+.WinningCandidates-candidate-list img {
+    width: 100%;
+    height: auto; /* Maintain aspect ratio */
+    cursor: pointer;
+}
+
+.WinningCandidates-candidate-list p {
+    font-size: 14px;
+}
+.WinningCandidates-candidate-list-selected img {
+    width: 100%;
+    height: 80; /* Maintain aspect ratio */
+    cursor: pointer;
+}
+.WinningCandidates-candidate-list-selectedimg p {
+    font-size: 14px;
+}
+.WinningCandidates-navigation-buttons{
+    display: flex;
+    justify-content: space-evenly;
+    /* background-color: rebeccapurple; */
+    width: 98%;
+    margin: auto;
+    height: 7%;
+}
+.WinningCandidates-navigation-buttons1{
+    width: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.WinningCandidates-navigation-buttons-next{
+    width:100%;
+    background: linear-gradient(to right, rgb(96, 132, 224), #3728a3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    cursor: pointer;
+    color: white;
+    text-align: center;
+    height: 80%;
+}
+.WinningCandidates-navigation-buttons-prev{
+    width:100%;
+    background: linear-gradient(to left, rgb(96, 132, 224), #3728a3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    cursor: pointer;
+    color: white;
+    text-align: center;
+    height: 80%;
+}
+.next-icon{
+    /* background-color: rgb(255, 72, 0); */
+    border-radius: 50px;
+    border: 1px solid white;
+    margin-left: 15%;
+    color: white;
+}
+.next-icon2{
+    /* background-color: rgb(255, 72, 0); */
+    border-radius: 50px;
+    border: 1px solid white;
+    margin-right: 15%;
+    color: white;
+}
+/**alert message*/
+.alert {
+    width: 35%;
+    height: 30%;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    z-index: 1;
+}
+.alert-line{
+    width: 100%;
+    background-color: rgb(237, 152, 33);
+    height: 5%;
+}
+.alert-content{
+    display: flex;
+    padding: 1%;
+    /* background-color: blue; */
+    height: 64%;
+    border-bottom: 1px solid rgb(73, 73, 73);
+}
+.alert-content-icon{
+    width: 20%;
+  /* background-color: rebeccapurple; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.alert-content-icon img{
+    width: 100%;
+    height: 50%;
+}
+.alert-content-message{
+    padding: 2%;
+    display: block;
+    width: 80%;
+  
+}
+.alert-content-message p {
+    margin-top: -1%; /* Adjust the margin to move the <p> element up */
+    text-indent: 0%;
+    font-size: 15px;
+}
+.alert-content-message .msg{
+    font-size: 14px;
+    padding: 2%;
+    text-align: justify;
+}
+.alert-buttons{
+    margin: auto;
+    margin-top: 1.5%;
+    width: 95%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+}
+.alert-buttons1{
+    /* width: 100%; */
+    border: 2px solid rgb(99, 99, 237);
+    background-color: rgb(247, 245, 245);
+    border-radius: 0px;
+    color: rgb(67, 67, 242);
+    font-size: 13px;
+}
+.alert-buttons2{
+    border: 2px solid rgb(99, 99, 237);
+    background-color: rgb(99, 99, 237);
+    border-radius: 0px;
+    color: rgb(247, 245, 245);
+    font-size: 13px;
+    margin-left: 2%;
+}
+.alert-buttons1:hover{
+    border: 2px solid rgb(99, 99, 237);
+    background-color: rgb(99, 99, 237);
+    color: rgb(247, 245, 245);
+}
+.alert-buttons2:hover{
+    border: 2px solid rgb(99, 99, 237);
+    background-color: rgb(247, 245, 245);
+    color: rgb(67, 67, 242);
+}
+/**Confirmation message*/
+
+.WinningCandidates-confirmation{
+    padding: 1%;
+    width: 35%;
+    height: 90%;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    border-radius: 3px;
+    z-index: 1;
+}
+.WinningCandidates-confirmation-voter{
+    height: 12%;
+    /* background-color: #3728a3; */
+}
+
+.Voting-confirmation-voter-span{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    height: 50%;
+}
+.Voters-name{
+    font-size: 18px;
+}
+.WinningCandidates-confirmation-details{
+    padding: 1%;
+    height: 100%;
+    max-height: 79%;
+    background-color: rgb(240, 246, 240);
+    overflow-y: auto;
+}
+.WinningCandidates-confirmation-details-container{
+    display: flex;
+    align-items: start;
+    justify-content: start;
+    border-bottom: 1px solid rgb(217, 206, 206);
+    /* background-color: red; */
+  
+}
+.WinningCandidates-confirmation-details-container h2{
+    font-size: 14px;
+    width: 30%;
+    margin-top: 0;
+    /* background-color: aqua; */
+}
+.WinningCandidates-confirmation-position-list{
+    width: 70%;
+    display: flex;
+    flex-wrap: wrap;
+    /* height: 20%; */
+    /* background-color: bisque; */
+}
+.WinningCandidates-confirmation-position-list li{
+    font-size: 14px;
+}
+
+.selected{
+   /* background-color: rgb(133, 129, 129); */
+   color: white;
+}
+.selectedImage{
+    filter: grayscale(100%); /* Apply grayscale effect to the selected image */
+    z-index: 0;
+}
+.WinningCandidates-name-container{
+    display: block;
+    height: 20%;
+}
+.WinningCandidates-name-container div{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40%;
+    margin-bottom: 2%;
+}
+.WinningCandidates-name-container span{
+    text-align: center;
+    width: 100%;
+    font-size: large;
+}
+.WinningCandidates-name-container-total-votes,
+.WinningCandidates-name-container-vote-percentage{
+    font-weight: bold;
+}
+
+/**confirmation message*/
+.WinningCandidates-Home_Con-confirmation{
+    width: 100vw;
+    height:100vh;
+    background-color: rgba(204, 178, 178, 0.4);
+    position: absolute;
+    z-index: 5;
+}
+
+.WinningCandidates-confirmation{
+    padding: 1%;
+    width: 98%;
+    height: 92%;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    border-radius: 15px;
+    z-index: 1;
+    /* background-color: red; */
+}
+.WinningCandidates-confirmation-details-box{
+    width: 20%;
+    height:93%;
+    border-radius: 15px;
+    background-color: #b52929;
+    position: absolute;
+    z-index: 0;
+}
+.WinningCandidates-confirmation-voter{
+    height: 12%;
+    /* background-color: #3728a3; */
+    display: flex;
+    align-items: start;
+}
+.WinningCandidates-confirmation-voter-span{
+    width: 100%;
+    font-size: 20px;
+    height: 50%;
+    z-index: 1;
+    color: white;
+    padding-left:3%;
+    /* background-color: red; */
+}
+.WinningCandidates-logo-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 30%;
+    /* background-color: red; */
+    height: 100%;
+}
+.WinningCandidates-logo-container img{
+    width: 30%;
+    height: 80%;
+}
+.WinningCandidates-confirmation-details{
+    padding: 1%;
+    min-height: 73%;
+    max-height: 83%;
+    /* background-color: rgb(240, 246, 240); */
+    overflow-y: auto;
+}
+.WinningCandidates-confirmation-details-container{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    border-bottom: 1px solid rgb(217, 206, 206);
+    /* background-color: red; */
+     width: 100%;
+}
+.WinningCandidates-confirmation-details-container h2{
+    font-size: 14px;
+    width: 30%;
+    margin-top: 0;
+    /* background-color: aqua; */
+}
+
+.Voting-confirmation-details-content{
+    /* background-color: aqua; */
+    width: 90%;
+    margin-left: 2%;
+}
+.WinningCandidates-confirmation-position-list{
+    width: 100%;
+    height: 20%;
+    display: flex;
+    align-items: center;
+    justify-content: start; 
+    flex-wrap: wrap;
+    /* background-color: rgb(78, 196, 31);    */
+}
+.WinningCandidates-confirmation-details-content{
+    /* background-color: aqua; */
+    width: 90%;
+    height: 100%;
+    margin-left: 2%;
+    border-bottom: 1px solid rgb(10, 137, 234);
+}
+.WinningCandidates-confirmation-candidate-list-selected {
+    width:18%; /* For desktop, show 2 candidates per row */
+    padding: 1px;
+    box-sizing: border-box;
+    /* border: 1px solid rgb(108, 108, 109); */
+    margin: 3px 5px;
+    height: 126px;
+    /* background-color: rgb(78, 196, 31);    */
+    text-align: center;
+    display: block;
+    /* display: block; */
+    /* background: linear-gradient(to top left, rgba(255,0,0,0), rgb(169, 166, 166)); */
+}
+.WinningCandidates-confirmation-candidate-list-selected img {
+    width: 55%;
+    height: 100%; /* Maintain aspect ratio */
+    /* cursor: pointer; */
+    position: relative;
+    border-radius: 50%;
+    
+}
+.WinningCandidates-image-container2{
+    /* background-color: antiquewhite; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 85%;
+    position: relative;
+}
+.WinningCandidates-name-container3{
+    width: 100%;
+    height: 30%;
+    /* background-color: aqua; */
+    /* flex-wrap: wrap; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.WinningCandidates-name-container3 p{
+    height: 100%;
+    text-align: center;
+    font-size: large;
+    /* background-color: #4588d4; */
+}
+.WinningCandidates-circle-check-con{
+    width: 16%;
+    height: 32%;
+    background-color: rgb(61, 52, 242);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    z-index: 4;
+    left: calc(100% - 32%);
+    bottom: 65%;
+    color: white;
+    font-weight: 500;
+}
+@media screen and (max-width: 1023px) {
+    .WinningCandidates-candidate-list {
+        width: 33%; /* For smaller screens, show 2 candidate per row */
+    }
+    .WinningCandidates-candidate-list-selected {
+        width: 65%; /* For smaller screens, show 2 candidate per row */
+    }
+    .WinningCandidates-tab-body-selected{
+        width: 35%; /* For smaller screens, show 2 candidate per row */
+    }
+    .WinningCandidates-tab-body-list{
+        width: 65%; /* For smaller screens, show 2 candidate per row */
+    }
+    .WinningCandidates-tab-container-con-name{
+        width: 30%;
+        font-size: 15px;
+    }
+    .alert {
+        width: 50%;
+    }
+    .alert-content-message p {
+        font-size: 14px;
+    }
+    .alert-content-message .msg{
+        font-size: 13px;
+      
+    } 
+    .WinningCandidates-navigation-buttons1{
+        width: 12%;
+        height: 90%;
+    }
+    .WinningCandidates-navigation-buttons-next{
+        width:140%;
+        height: 80%;
+    }
+    .WinningCandidates-confirmation{
+        width: 50%;
+    }
+    .WinningCandidates-confirmation{
+        width: 90%;
+    }
+     /**winning*/
+     .WinningCandidates-confirmation-details{
+        width: 100%;
+    }
+    .Voting-confirmation-details-h2{
+        font-size: 10px;
+    }
+    .WinningCandidates-confirmation-position-list{
+        width: 100%;
+        text-align: end;
+        margin: 0 1%;
+    }
+    .WinningCandidates-confirmation-candidate-list-selected {
+        width:30%; /* For desktop, show 2 candidates per row */
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .WinningCandidates-candidate-list {
+        width: 45%; /* For smaller screens, show 2 candidate per row */
+    }
+    .WinningCandidates-tab-body-selected{
+        width: 45%; /* For smaller screens, show 2 candidate per row */
+    }
+    .candidate-list-selected{
+        width: 100%;
+    }
+    .WinningCandidates-tab-container-con-name{
+        width: 40%;
+        font-size: 12px;
+    }
+    .alert {
+        width: 60%;
+    }
+  
+    .WinningCandidates-navigation-buttons1{
+        width: 20%;
+        height: 90%;
+    }
+    .WinningCandidates-navigation-buttons-next{
+        width:150%;
+        height: 80%;
+    }
+    .WinningCandidates-confirmation{
+        width: 90%;
+    }
+     /**winning*/
+     .WinningCandidates-confirmation-details{
+        width: 100%;
+    }
+    .Voting-confirmation-details-h2{
+        font-size: 10px;
+    }
+    .WinningCandidates-confirmation-position-list{
+            /* background-color: red; */
+        width: 100%;
+        text-align: end;
+        margin: 0 1%;
+    }
+    .WinningCandidates-confirmation-candidate-list-selected {
+        width:30%; /* For desktop, show 2 candidates per row */
+    }
+}
+@media screen and (max-width: 560px) {
+    .WinningCandidates-candidate-list {
+        width: 50%; /* For smaller screens, show 2 candidate per row */
+        padding: 5px;
+    }
+    .WinningCandidates-candidate-list-selected{
+        width: 100%;
+    }
+    .WinningCandidates-tab-body-selected{
+        width: 50%; /* For smaller screens, show 2 candidate per row */
+    }
+    .alert {
+        width: 80%;
+    }
+
+    .WinningCandidates-navigation-buttons1{
+        width: 20%;
+        height: 90%;
+    }
+    .WinningCandidates-navigation-buttons-next{
+        width:150%;
+        height: 80%;
+    }
+    .WinningCandidates-confirmation{
+        width: 80%;
+    }
+     /**winning*/
+     .WinningCandidates-confirmation-details{
+        width: 100%;
+    }
+    .Voting-confirmation-details-h2{
+        font-size: 10px;
+    }
+    .WinningCandidates-confirmation-position-list{
+            /* background-color: red; */
+        width: 100%;
+        text-align: end;
+        margin: 0 1%;
+    }
+    .WinningCandidates-confirmation-candidate-list-selected {
+        width:40%; /* For desktop, show 2 candidates per row */
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .WinningCandidates-candidate-list {
+        width: 100%; /* For smaller screens, show 1 candidate per row */
+    }
+    .WinningCandidates-candidate-list-selected{
+        width: 100%;
+    }
+    .WinningCandidates-tab-container-con-name{
+        width: 70%;
+        font-size: 13px;
+    }
+    .WinningCandidates-navigation-buttons1{
+        width: 30%;
+        height: 90%;
+    }
+    .WinningCandidates-navigation-buttons-next{
+        width:150%;
+        height: 80%;
+    }
+    .WinningCandidates-confirmation{
+        width: 80%;
+    }
+    /**winning*/
+    .WinningCandidates-confirmation-details{
+        width: 100%;
+    }
+    .Voting-confirmation-details-h2{
+        font-size: 10px;
+    }
+    .WinningCandidates-confirmation-position-list{
+            /* background-color: red; */
+        width: 100%;
+        text-align: end;
+        margin: 0 1%;
+    }
+    .WinningCandidates-confirmation-candidate-list-selected {
+        width:40%; /* For desktop, show 2 candidates per row */
+    }
+}   

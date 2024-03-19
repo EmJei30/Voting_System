@@ -1,0 +1,478 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: white;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: rgb(250, 250, 250);
+    width: 100vw;
+    position: relative;
+    background-color: white;
+  }
+  .login-form {
+    background-color: #ffffff;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    max-width: 100vw; /* Set maximum width to cover entire screen */
+    width: 30%; /* Ensure the form takes up the full width of its container */
+    /* background-color: red; */
+    height: 55%;
+    z-index: 1;
+  }
+  .login-form-group {
+    margin-bottom: 20px;
+    /* margin-left: -20px; */
+    width: 100%;
+    height: 30%;
+    /* background-color: red; */
+
+  }
+  .login-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    margin-left: 10%;
+  }
+  /* .login-form-group input {
+    width: 72%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-left: 10%;
+
+  } */
+  .login-button {
+    margin-top: 20px;
+    height: 15%;
+    width: 55%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background-color: #4d95e1;
+    color: white;
+    cursor: pointer;
+    /* margin-left: 20%; */
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  .form-group-otp{
+    margin: auto;
+    width: 90%;
+    text-align: right;
+  }
+  .form-group-otp span{
+    color: rgb(120, 119, 119);
+    }
+  .form-group-login{
+    margin: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .link-to-otp{
+    font-size: 14px;
+    font-style: italic;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .block-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20%;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  margin-top: -5%;
+  /* background: red; */
+}
+
+.block-input {
+  flex: 1;
+  text-align: center;
+  height: 45%;
+  max-width: 10%;
+  font-size: 100%;
+  font-weight: bold;
+  margin: 0 10px; /* Adjust the margin value to reduce the gap */
+  /* margin-left: 2px; */
+  border: 1px solid #ccc;
+    border-radius: 6px;
+}
+.disabled-input {
+  flex: 1;
+  text-align: center;
+  height: 45%;
+  max-width: 10%;
+  font-size: 100%;
+  font-weight: bold;
+  cursor: not-allowed;
+  background-color: rgb(110, 109, 109);
+  margin: 0 10px; /* Adjust the margin value to reduce the gap */
+  /* margin-left: 2px; */
+  border: 1px solid #ccc;
+    border-radius: 6px;
+}
+.login-logo-container{
+  display: block;
+  /* background-color: red; */
+  width: 25%;
+  height: 60%;
+  z-index: 2;
+  margin-right: 2%;
+}
+.login-logo-container2{
+  height: 15%;
+  display: block;
+  /* background-color: rebeccapurple; */
+}
+.login-logo-container2 div{
+  height: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background-color: rebeccapurple; */
+}
+.login-logo-container2 div span{
+  font: 1em sans-serif;
+  font-weight: bold;
+ font-size: 25px;
+}
+.login-logo-container img{
+  width: 95%;
+  height: 70%;
+}
+.background-template2 {
+  width: 70vw; /* Adjust the width and height as needed */
+  height: 70vw; /* Adjust the width and height as needed */
+  background-color: #efefef; /* Change to your desired color */
+  position: absolute;
+  top: 20;
+  left: -15vw;
+  outline: none;
+  border-radius: 45px;
+  transform: rotate(45deg); /* Rotate the diamond */
+  z-index: 1;
+}
+
+.background-template-inner2 {
+  width: 90%; /* Adjust the size of the inner diamond as desired */
+  height: 90%; /* Adjust the size of the inner diamond as desired */
+  /* background: linear-gradient(to bottom left, rgba(45, 14, 223, 0), rgb(64, 5, 255)); */
+  background-color: #4588d4;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 45px;
+  border: 1px solid rgb(59, 58, 58);
+  transform: translate(-50%, -50%) rotate(90deg); /* Rotate the inner diamond */
+  z-index: 1;
+}
+.home-logo{
+  z-index: 1;
+}
+.marque-con{
+  width: 50%;
+  height:20%;
+  /* background-color: red; */
+  position: absolute;
+  bottom: 2%;
+  right: 1%;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.marque-content{
+  width: 100%;
+  background-color: #4588d4;
+}
+.marque-content span{
+  color: black;
+  font-weight: 400;
+  font-size: larger;
+}
+
+.login-title{
+  /* background-color: #4d95e1; */
+  margin-bottom: 0px;
+}
+.countdown-timer-con {
+  display:block;
+  margin:auto;
+  width: 100%; /* Ensure it takes the full width */
+}
+.countdown-count-con{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2%;
+}
+.countdown-timer {
+  text-align: center;
+  flex-basis: 10%; /* Adjust the width of each timer */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: column;
+  width: 10%;
+  background-color: rgb(237, 239, 239);
+  color: rgb(12, 91, 128);
+  width: 35%;
+  margin: auto;
+  border-radius: 5px;
+  height: 20%;
+  margin: 2% 2%;
+}
+
+.countdown-timer-number {
+  display: block;
+  font-size: 24px; /* Adjust as needed */
+  /* background-color: red; */
+  width: 80%;
+}
+
+.countdown-timer-text {
+  display: block;
+  width: 80%;
+  font-size: 10px; /* Adjust as needed */
+  height: 30%;
+}
+.countdown-msg{
+  width: 70%;
+  text-align: center;
+  /* background-color: rebeccapurple; */
+  margin: auto;
+  margin-top: 1%;
+  margin-bottom: 1%;
+  font-size: 24px;
+  color: rgb(12, 91, 128);
+}
+  /* Media query for smaller screens */
+  
+  @media screen and (max-width: 1023px) {
+    .login-form {
+      padding: 15px; /* Decrease padding */
+      width: 35%; 
+    }
+
+       /**Design*/
+       .background-template2 {
+        width: 50vw; /* Adjust the width and height as needed */
+        height: 50vw; /* Adjust the width and height as needed */
+        /* left: -75vw; */
+      }
+      .background-template-inner2 {
+        width: 180%; /* Adjust the size of the inner diamond as desired */
+        height: 180%; /* Adjust the size of the inner diamond as desired */
+      }
+      .marque-con{
+        width: 90%;
+      }
+      .marque-content span{
+        color: black;
+        font-weight: 400;
+        font-size: small;
+      }
+      /**logo*/
+      .login-logo-container{
+        display: block;
+        /* background-color: red; */
+        width: 30%;
+        height: 47%;
+        z-index: 2;
+        margin-right: 2%;
+      }
+      .login-logo-container2{
+        height: 15%;
+        display: block;
+        /* background-color: rebeccapurple; */
+      }
+      .login-logo-container2 div{
+        height: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* background-color: rebeccapurple; */
+      }
+      .login-logo-container2 div span{
+        font: 1em sans-serif;
+        font-weight: bold;
+       font-size: 18px;
+      }
+      .login-logo-container img{
+        margin-top: 20%;
+        width:100%;
+        height: 50%;
+      }
+  }
+  @media screen and (max-width: 768px) {
+    .login-form {
+      padding: 15px; /* Decrease padding */
+      width: 45%; 
+    }
+
+    /* .login-form-group {
+      margin-left: -10px;
+    } */
+    .block-input{
+      height: 30%;
+      font-size: 70%;
+      background-color: #eff1f4;
+      color: rgb(35, 35, 35);
+    }
+
+     /**Design*/
+     .background-template2 {
+      width: 90vw; /* Adjust the width and height as needed */
+      height: 90vw; /* Adjust the width and height as needed */
+      left: -55vw;
+    }
+    .background-template-inner2 {
+      width: 160%; /* Adjust the size of the inner diamond as desired */
+      height: 160%; /* Adjust the size of the inner diamond as desired */
+    }
+    .marque-con{
+      width: 90%;
+    }
+    .marque-content span{
+      color: black;
+      font-weight: 400;
+      font-size: small;
+    }
+    /**logo*/
+    .login-logo-container{
+      display: block;
+      /* background-color: red; */
+      width: 30%;
+      height: 47%;
+      z-index: 2;
+      margin-right: 2%;
+    }
+    .login-logo-container2{
+      height: 15%;
+      display: block;
+      /* background-color: rebeccapurple; */
+    }
+    .login-logo-container2 div{
+      height: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* background-color: rebeccapurple; */
+    }
+    .login-logo-container2 div span{
+      font: 1em sans-serif;
+      font-weight: bold;
+     font-size: 18px;
+    }
+    .login-logo-container img{
+      margin-top: 20%;
+      width:100%;
+      height: 50%;
+    }
+  }
+  @media screen and (max-width: 480px) {
+
+    .form-group-login{
+      margin-top: -5%;
+    }
+    .login-form {
+      padding: 10px; /* Decrease padding */
+      width: 60%; 
+   
+      min-height: 30%;
+      max-height: 48%;
+    }
+    .countdown-timer-con{
+
+      max-height: 30%;
+      /* background-color: #4588d4; */
+    }
+    .countdown-timer{
+      width: 100px;
+    }
+    .countdown-msg{
+      font-size: 14px;
+    }
+    .countdown-timer-number{
+      font-size: medium;
+    }
+    .countdown-timer-text{
+      width: 50px;
+    }
+    .form-group-otp{
+      /* background-color: aqua; */
+      margin-top: -10%;
+    }
+    .form-group-otp span{
+      color: rgb(120, 119, 119);
+    }
+    .login-form-group{
+      color: rgb(120, 119, 119);
+    }
+
+    .block-input{
+      height: 40%;
+      font-size: 100%;
+    }
+
+    /**Design*/
+    .background-template2 {
+      width: 90vw; /* Adjust the width and height as needed */
+      height: 90vw; /* Adjust the width and height as needed */
+      left: -45vw;
+    }
+    .background-template-inner2 {
+      width: 160%; /* Adjust the size of the inner diamond as desired */
+      height: 160%; /* Adjust the size of the inner diamond as desired */
+    }
+    .marque-con{
+      width: 90%;
+    }
+    .marque-content span{
+      color: black;
+      font-weight: 400;
+      font-size: small;
+    }
+    /**logo*/
+    .login-logo-container{
+      display: block;
+      width: 30%;
+      height: 47%;
+      z-index: 2;
+      margin-right: 2%;
+    }
+    .login-logo-container2{
+      height: 15%;
+      display: block;
+      /* background-color: rebeccapurple; */
+    }
+    .login-logo-container2 div{
+      height: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* background-color: rebeccapurple; */
+    }
+    .login-logo-container2 div span{
+      font: 1em sans-serif;
+      font-weight: bold;
+     font-size: 12px;
+    }
+    .login-logo-container img{
+      margin-top: 20%;
+      width:100%;
+      height: 50%;
+    }
+}
