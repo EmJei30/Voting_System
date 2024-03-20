@@ -369,13 +369,13 @@ const update_vote = async (req, res) => {
                     } else {
                         // console.log(`Vote count for candidate ${id} updated successfully`);
 
-                        const { Voters_Id, Voters_Name, Candidate_Name, Candidate_Position } = update;
+                        const { Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration } = update;
                         console.log(update)
                         const Vcount = 1;
                         // Insert the updated record into database2
-                        const insertQuery = `INSERT INTO ${database2} (Voters_Id, Voters_Name, Candidate_Name, Candidate_Position,  Vote_Count, Created_At, Updated_At) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`;
+                        const insertQuery = `INSERT INTO ${database2} (Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Vote_Count, Created_At, Updated_At) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`;
 
-                        connection.query(insertQuery, [Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Vcount], (insertErr, _result) => {
+                        connection.query(insertQuery, [Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Vcount], (insertErr, _result) => {
                             if (insertErr) {
                                 console.error(`Error inserting record into ${database2} for candidate ${id}:`, insertErr);
                                 reject(insertErr);
@@ -655,6 +655,130 @@ const edit_vote_transaction = async (req, res) => {
         return res.status(500).json({ error: 'Error updating vote count' });
     }
 }
+
+/**login */
+/**Get vote transactions */
+const login = async(req, res) => {
+    const { username, password } = req.body;
+    console.log( req.body)
+    const database = 'users';
+    try {
+        const query = `SELECT * FROM ${database} WHERE Username = '${username}'`;
+        const rows = await executeQuery(query, [username]);
+        console.log( 'rows',rows)
+        if (rows.length === 0) {
+            // No user found with the provided username
+            res.status(401).json({ success: false, message: 'Invalid username or password' });
+            return;
+        }
+    
+        // User found, compare passwords
+        const user = rows[0];
+        if (user.Password !== password) {
+            // Passwords don't match
+            res.status(401).json({ success: false, message: 'Invalid username or password' });
+            return;
+        }
+    
+        // Passwords match, return success response
+        res.json({ success: true, message: 'Login successful', user: { id: user.id, username: user.Username } });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('An error occurred while retrieving the products.');
+    }
+};
+
+/**register */
+const register = async(req, res) => {
+    const { username, password, adminName } = req.body;
+    console.log( req.body)
+    const database = 'users';
+    
+    try {
+        const query = `SELECT * FROM ${database} WHERE Username = '${username}'`;
+        const existingUser = await executeQuery(query, [username]);
+
+          // If the username already exists, return a 400 status code and an error message
+        if (existingUser.length > 0) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+    
+        const newRecord ={
+            Username: username,
+            Password: password,
+            Admin_Name: adminName,
+            Created_At: new Date(),
+            Updated_At: new Date()
+        }
+        const insertQuery = `INSERT INTO ${database} SET ?`;
+        await executeQuery(insertQuery, newRecord);
+
+        // Passwords match, return success response
+        res.json({ success: true, message: 'Login successful'});
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('An error occurred while retrieving the products.');
+    }
+};
+
+/**Reset all member voting status */
+
+const reset_all_member_status = async (req, res) => {
+    const io = require('../server').io;
+
+    console.log(req.body);
+    const updates = req.body;
+    const memberDatabase = 'members';
+    const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    try {
+        if (!updates || !Array.isArray(updates)) {
+            return res.status(400).json({ error: 'Invalid updates' });
+        }
+    
+        // Array to store promises for each update
+        const updatePromises = [];
+    
+        // Iterate through each update
+        updates.forEach(update => {
+            const { Member_Id } = update;
+            const memberStatus = '';
+            const query = `UPDATE ${memberDatabase} SET Voting_Status = ? WHERE Member_Id = ?`;
+    
+            // Create a promise for each update
+            const updatePromise = new Promise((resolve, reject) => {
+                connection.query(query, [memberStatus, Member_Id], async (updateErr, _result) => {
+                    if (updateErr) {
+                        console.error(`Error updating vote count for member ${Member_Id}:`, updateErr);
+                        reject(updateErr);
+                    } else {
+                        const selectUpdatedMemberQuery = `SELECT * FROM ${memberDatabase} WHERE Member_Id = ?`;
+                        connection.query(selectUpdatedMemberQuery, [Member_Id], (selectUpdatedMemberErr, updatedMemberResult) => {
+                            if (selectUpdatedMemberErr) {
+                                console.error(`Error fetching updated record for member ${Member_Id}:`, selectUpdatedMemberErr);
+                                reject(selectUpdatedMemberErr);
+                            } else {
+                                io.emit('UpdatedMemberRecord', updatedMemberResult[0]);
+                                resolve();
+                            }
+                        });
+                    }
+                });
+            });
+    
+            // Push the promise for this update into the array
+            updatePromises.push(updatePromise);
+        });
+    
+        // Wait for all updates to complete
+        await Promise.all(updatePromises);
+    
+        return res.status(200).json({ message: 'Records updated successfully' });
+    } catch (error) {
+        console.error('Error updating vote count:', error);
+        return res.status(500).json({ error: 'Error updating vote count' });
+    }
+};
 module.exports = {
     saveImage,
     insertCandidate,
@@ -674,5 +798,10 @@ module.exports = {
     create_new_voting_date,
     get_voting_transactions,
     close_vote_transaction,
-    edit_vote_transaction
+    edit_vote_transaction,
+
+    /**Login */
+    login,
+    register,
+    reset_all_member_status
 };

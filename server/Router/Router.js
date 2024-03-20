@@ -18,7 +18,12 @@ const {
     create_new_voting_date,
     get_voting_transactions,
     close_vote_transaction,
-    edit_vote_transaction
+    edit_vote_transaction,
+
+    /**Login */
+    login,
+    register,
+    reset_all_member_status
 } = require('../Controller/Controller');
 
 router.post('/upload_candidate_info', upload_candidate_info);
@@ -29,6 +34,11 @@ router.post('/upload_candidate_count', upload_candidate_count);
 
 router.post('/create_new_voting_date', create_new_voting_date);
 
+router.post('/login', login);
+
+router.post('/reset_all_member_status', reset_all_member_status);
+
+router.post('/register', register);
 
 router.get('/get_members_info', get_members_info);
 

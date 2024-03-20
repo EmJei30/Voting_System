@@ -16,10 +16,11 @@ import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ExpandLessRoundedIcon from '@mui/icons-material/ExpandLessRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import { FaQuestion } from "react-icons/fa6";
 
 const Home = () => {
-    const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, setCandidates, candidates, groupedCandidates, membersInfo, VoteTransactions, setVoteTransactions,
+    const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, setCandidates, candidates, groupedCandidates, membersInfo, setMembersInfo, VoteTransactions, setVoteTransactions,
 			setGroupedCandidates, maxCandidatesPerPositionState, setMaxCandidatesPerPositionState, highestVoteCount, setHighestVoteCount } = useContext(VotingContext);
     const [activeTab, setActiveTab] = useState(0);
     const [uploadedCsvFile, setUploadedCsvFile] = useState([]);
@@ -31,6 +32,8 @@ const Home = () => {
 	const [isForceClose, setIsForceClose] = useState(false);
 	const [isMemberOpen, setIsMemberOpen] = useState(false);
 	const [isUpdateMember, setIsUpdateMember] = useState(false);
+	const [isUserSetupOpen, setIsUserSetupOpen] = useState(false);
+
 	// const [groupedCandidates, setGroupedCandidates] = useState([]);
 	// const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
 	// const [highestVoteCount, setHighestVoteCount]= useState([]);
@@ -40,6 +43,8 @@ const Home = () => {
 	const [StartTime, setStartTime] = useState('');
 	const [EndDate, setEndDate] = useState('');
 	const [EndTime, setEndTime] = useState('');
+	/**current url */
+	const [currentUrl, setCurrentUrl] = useState('');
 
 	/**Update vote transaction */
 	const [EditStartDate, setEditStartDate] = useState('');
@@ -48,6 +53,15 @@ const Home = () => {
 	const [EditEndTime, setEditEndTime] = useState('');
 	const [notificationMSG, setNotificationMSG] = useState('');
 
+	/**user set up */
+
+	const [username, setUsername] = useState('');
+	const [password, setPassword] = useState('');
+	const [adminName, setAdminName] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
+
+	/**members */ 
+	const [doneVoters, setDoneVoters] = useState([]);
 	const [fileUploaded, setFileUploaded] = useState('');
     const nav = useNavigate();
 
@@ -55,6 +69,11 @@ const Home = () => {
 		fetchVotingTransactions();
 		fetchCandidates();
 		fetchCandidatesMaxCount();
+		if (membersInfo.length > 0) {
+            const doneMembers = membersInfo.filter(member => member.Voting_Status === 'Done');
+            setDoneVoters(doneMembers)
+            // Now 'doneMembers' contains only members with Voting_Status equal to 'Done'
+        }
 		if(VoteTransactions.length > 0){
 			const dateStart = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
 			const sd = convertDateFormat(dateStart)
@@ -74,7 +93,16 @@ const Home = () => {
 			const et = convertTo12HourFormat(timeEnd)
 			setEditEndTime(timeEnd);	
 		}
+		const url = window.location.href;
+        const parsedUrl = new URL(url);
+        const protocol = parsedUrl.protocol;
+        const hostname = parsedUrl.host;
+        const port = parsedUrl.port;
+        // Construct the URL string with protocol, hostname, and port
+        const baseUrl = `${protocol}//${hostname}`;
+        setCurrentUrl(baseUrl);
 	},[])
+
 	useEffect(()=>{
 		if(VoteTransactions.length > 0){
 			const dateStart = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
@@ -121,6 +149,24 @@ const Home = () => {
 			setEditEndTime('');
 			setEditStartDate('');
 			setEditStartTime('');
+        });
+		socket.on('UpdatedMemberRecord', (newRecord) => {
+            console.log('UpdatedMemberRecord', newRecord)
+            setMembersInfo(prevData =>
+                prevData.map(record =>
+                    record.id === newRecord.id &&  record.Member_Id === newRecord.Member_Id ? { ...newRecord } : record
+                )
+            );
+			setDoneVoters(prev => {
+                // Check if newRecord's Voting_Status is 'Done'
+                if (newRecord.Voting_Status === 'Done') {
+                    // Add newRecord to the previous state
+                    return [...prev, newRecord];
+                } else {
+                    // If Voting_Status is not 'Done', return the previous state unchanged
+                    return prev;
+                }
+            });
         });
         return () => {
             socket.disconnect();
@@ -462,6 +508,7 @@ const Home = () => {
 						imageInput.value = '';
 					}
                     console.log('success parsedData', parsedData)
+					alert('Candidates successfully uploaded...')
 					setFileUploaded('');
 					
 				} else {
@@ -538,7 +585,7 @@ const Home = () => {
 				if (imageInput) {
 					imageInput.value = '';
 				}
-				console.log('success parsedData', parsedData)
+				alert('Max count for per position successfully uploaded...')
 				setFileUploaded('');
 
 			} else {
@@ -679,18 +726,29 @@ const Home = () => {
 	const handleVotingDate = () =>{
 		setIsVotingDateUpdate(false);
 		setIsVotingDateOpen(true);
-		
+		setIsUpdateMember(false)	
 	}
 	/**update voting */
 	const handleVotingUpdate = () =>{
 		setIsVotingDateUpdate(true);
 		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false)
 	}
 	/**Update Member  */
 	const handleUpdateMember = () =>{
-		setIsUpdateMember(true);
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(true)
 	}
-
+	/** handle user setup */
+	const handleUserSetup = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(true);
+		setIsUpdateMember(false)
+	}
 	/**Function to generate invitation */
 	const handleGeneratePDF = () =>{
 		if(membersInfo.length > 0 && VoteTransactions.length > 0){
@@ -726,7 +784,7 @@ Maria Carmela B. Francisco.
 This event will be open for voting from ${formattedStartDate}  ${formattedStartTime} to ${formattedEndDate} ${formattedEndTime}.
 			
 Please click the following link to input your code:
-sample url http://localhost:6060/
+sample url ${currentUrl}.
 
 
 Your Vote Code: ${OTP_Code}
@@ -848,6 +906,98 @@ MC Election Committee
 		document.body.removeChild(link);
 	  };
 	  
+	  /**create user */
+	  const handleUserRegistration = async (e) => {
+		e.preventDefault();
+		if(username === '' || password === '' || confirmPassword === '' || adminName === ''){
+			alert('Please complete the details needed...');
+			return
+		}
+		if(password !== confirmPassword){
+			alert('Please make sure your passwords match...');
+			return
+		}
+		// Make a fetch request to your backend to register the user
+		try {
+			const response = await fetch(`${assignedURL}/register`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ username, password, adminName }),
+			});
+			const data = await response.json();
+			if (response.ok) {
+				// User registered successfully
+				alert('User registered successfully');
+				// Clear input fields or reset state as needed
+				setUsername('');
+				setPassword('');
+				setAdminName('');
+				setConfirmPassword('');
+				// Optionally, close the user setup container
+				// setIsUserSetupOpen(false);
+			} else {
+				// Handle registration failure
+				// console.error('Failed to register user');
+				// Optionally, show an error message to the user
+				if (data && data.error) {
+					alert(data.error);
+				} else {
+					alert('Registration failed. Please try again later.');
+				}
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			// Handle fetch error
+		}
+	};
+	/**function handling reset single record */
+	const handleResetSingle = async(rec) =>{
+			const updatedMemberStatus = {
+				memberID: rec.Member_Id,
+				memberStatus: ''
+			}
+			try {
+				const response = await fetch(`${assignedURL}/update_member_status`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(updatedMemberStatus),
+				});
+	
+				if (response.ok) {
+					alert(`Vote status for member with id ${rec.Member_Id} reset successfully...`)
+					// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+				} else {
+					console.error('Error updating records:', response.statusText);
+				}
+			} catch (error) {
+				console.error('Error updating records:', error);
+			}
+	}
+	/**Function handling reset all members */
+	const handleResetAllMembers = async() =>{
+		try {
+			const response = await fetch(`${assignedURL}/reset_all_member_status`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(membersInfo),
+			});
+
+			if (response.ok) {
+				alert(`Vote status for all member reset successfully...`)
+				// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+			} else {
+				console.error('Error updating records:', response.statusText);
+			}
+		} catch (error) {
+			console.error('Error updating records:', error);
+		}
+	}
     return (
         // <div className="Home_Con">
         //     <div className="nav-container">
@@ -907,10 +1057,11 @@ MC Election Committee
 			<div className="sidebar">
 				{/* <button class="toggle-btn" onClick={toggleSidebar}>Toggle Sidebar</button> */}
 				<div className="sidebar-logo">
-					<img src={exampleImage} alt="Example" className="home-logo" />
+					{/* <img src={exampleImage} alt="Example" className="home-logo" /> */}
 				</div>
+				<div className="sidebar-line">&nbsp;</div>
 				<div className="sidebar-navigations">
-					<div className="sidebar-line">&nbsp;</div>
+					
 					<button onClick={handleNavigateToDashboard}>Dashboard</button>
 					<button onClick={handleNavigateToDashboardWinning}>Winning Candidates</button>
 
@@ -954,6 +1105,7 @@ MC Election Committee
 							<button  onClick={handleGenerateExcel}>Generate OTP Records</button>
 						</div>
 					</>}
+					<button onClick={handleUserSetup}>User Setup</button>
 
 
 				</div>
@@ -972,7 +1124,7 @@ MC Election Committee
 							<div className="side-button-update"><span>Update Vote</span></div>
 						</div> */}
 						<div className="voting-time-con">
-						{/* <span>Create Vote Transaction</span> */}
+						<h2 style={{marginLeft: '15px'}}>Create Vote Transaction</h2>
 							<div className="voting-time">
 								
 								<div className="add-voting">
@@ -1005,13 +1157,14 @@ MC Election Committee
 						</div>
 					</>
 					}
-				{isVotingDateUpdate && 
+					{isVotingDateUpdate && 
 					<>
 						{/* <div className="side-button">
 							<div className="side-button-start"><span>Start Vote</span></div>
 							<div className="side-button-update"><span>Update Vote</span></div>
 						</div> */}
 						<div className="voting-time-con">
+						<h2 style={{marginLeft: '15px'}}>Update Vote Transaction</h2>
 							<div className="voting-time">
 								<div className="add-voting">
 									<div className="add-voting-start">
@@ -1043,46 +1196,87 @@ MC Election Committee
 					</>
 					}
 				
-				{isUpdateMember && 
+					{isUpdateMember && 
 					<>
 						{/* <div className="side-button">
 							<div className="side-button-start"><span>Start Vote</span></div>
 							<div className="side-button-update"><span>Update Vote</span></div>
 						</div> */}
 						<div className="update-member-time-con">
-							{/* <div className="voting-time">
-								<div className="add-voting">
-									<div className="add-voting-start">
-										<div className="add-voting-start-input">
-											<div><label>Start date:</label></div>
-											<div>&nbsp;<input type="date" value={EditStartDate} onChange={(e)=> setEditStartDate(e.target.value)}/></div>
-									
-											<div><label>Start time:</label></div>
-											<div>&nbsp;<input type="time" value={EditStartTime} onChange={(e)=> setEditStartTime(e.target.value)}/></div>
-										</div>
-									</div>
-									<div className="add-voting-end">
-										<div className="add-voting-end-input">
-												<div><label>End date:</label></div>
-												<div>&nbsp;<input type="date" value={EditEndDate} onChange={(e)=> setEditEndDate(e.target.value)}/></div>
-										
-												<div><label>End time:</label></div>
-												<div>&nbsp;<input type="time" value={EditEndTime} onChange={(e)=> setEditEndTime(e.target.value)}/></div>
-											</div>
-										</div>
-
+							<div className="update-member-time-con2">
+								<div className="update-member-time-con2-header">
+									<span>Voters Percent : {doneVoters.length} / {membersInfo.length}</span>
 								</div>
-							</div> */}
-							<div className="update-member-time-con">
-
+								<div className="update-member-time-con2-content" >
+									<table>
+										<thead>
+											<tr>
+												<th>Member ID</th>
+												<th>Member Name</th>
+												<th>OTP Code</th>
+												<th>Voting Status</th>
+												<th>Reset Status</th>
+											</tr>
+										</thead>
+										<tbody>
+											{membersInfo.length > 0 ? (
+												membersInfo.map((record, index) => (
+													<tr key={index}>
+														<td>{record.Member_Id}</td>
+														<td>{record.Member_Name}</td>
+														<td>{record.OTP_Code}</td>
+														<td>{record.Voting_Status}</td>
+														<td><RestartAltRoundedIcon onClick={()=>handleResetSingle(record)} className="reset-icon"/></td>
+													</tr>
+													))
+												) : (
+				
+													<tr>
+														<td colSpan={10} className="NoRecordFound">No Record Found!</td>
+													</tr>
+											)}
+										</tbody>
+									</table>
+								</div>
 							</div>
-							<div className="voting-time-button">
-								<button className="voting-time-button-add" onClick={handleUpdateVoteDate}>Update</button>
-								<button className="voting-time-button-stop" onClick={handleStopVoteDate}>Force Close</button>
+							<div className="voting-time-button2">
+								<button className="voting-time-button-add" onClick={handleResetAllMembers}>Reset</button>
 							</div>
 						</div>
 					</>
 					}
+					{isUserSetupOpen && (
+					<div className="register-container">
+						<div className="user-setup-container">
+							<h3>User Setup</h3>
+							{/* User registration form */}
+							<form onSubmit={handleUserRegistration}>
+								<div className="input-group">
+									<div className="input-field">
+										<label htmlFor="username">Username:</label>
+										<input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" />
+									</div>
+									<div className="input-field">
+										<label htmlFor="adminName">Admin Name:</label>
+										<input type="text" id="adminName" value={adminName} onChange={(e) => setAdminName(e.target.value)} autoComplete="off" />
+									</div>
+								</div>
+								<div className="input-group">
+									<div className="input-field">
+										<label htmlFor="password">Password:</label>
+										<input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" />
+									</div>
+									<div className="input-field">
+										<label htmlFor="confirmPassword">Confirm Password:</label>
+										<input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="off" />
+									</div>
+								</div>
+								<button type="submit">Register</button>
+							</form>
+						</div>
+					</div>
+					)}
+					
 				</div>
 			</div>
 		</div>

@@ -31,7 +31,7 @@ function App() {
 	const [highestVoteCount, setHighestVoteCount]= useState([]);
 	const [countDown, setCountDown] = useState('');
 	const [otpCode, setOtpCode] = useState('');
-
+	
 	useEffect(()=>{
 		const isLoggedin = sessionStorage.getItem('isLoggedIn');
 		const usersname = sessionStorage.getItem('usersName');
@@ -43,6 +43,7 @@ function App() {
 		fetchCandidates();
 		fetchVoteRecords();
 		fetchVotingTransactions();
+		
 	},[]);
 
 	const fetchVoteRecords = async () => {

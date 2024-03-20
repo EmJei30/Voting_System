@@ -14,26 +14,51 @@ const Administrator = () =>{
     const nav = useNavigate();
 
     
-    const handleSubmit = (e) => {
+    // const handleSubmit = (e) => {
+    //     e.preventDefault();
+    //     // Handle login logic here
+    //     console.log('Logging in with username:', username, 'and password:', password);
+    //     if (username === 'admin' && password === 'admin') {
+    //         sessionStorage.setItem('isLoggedIn', true);
+    //         sessionStorage.setItem('usersName', 'Admin');
+    //         setisLoggedIn(true);
+    //         setUsersName('Admin');
+    //         nav('/admin-maintenance');
+    //     }else{
+    //         // sessionStorage.setItem('isLoggedIn', true);
+    //         // sessionStorage.setItem('usersName', 'Admin');
+    //         // setisLoggedIn(true);
+    //         // setUsersName('Admin');
+    //         // nav('/voting-system');
+    //         alert('Invalid credentials. Please check username or password...')
+    //     }
+    // };
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log('Logging in with username:', username, 'and password:', password);
-        if (username === 'admin' && password === 'admin') {
-            sessionStorage.setItem('isLoggedIn', true);
-            sessionStorage.setItem('usersName', 'Admin');
-            setisLoggedIn(true);
-            setUsersName('Admin');
-            nav('/admin-maintenance');
-        }else{
-            // sessionStorage.setItem('isLoggedIn', true);
-            // sessionStorage.setItem('usersName', 'Admin');
-            // setisLoggedIn(true);
-            // setUsersName('Admin');
-            // nav('/voting-system');
-            alert('Invalid credentials. Please check username or password...')
+    
+        const response = await fetch(`${assignedURL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+    
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                sessionStorage.setItem('isLoggedIn', true);
+                sessionStorage.setItem('usersName', data.username);
+                setisLoggedIn(true);
+                setUsersName(data.username);
+                nav('/admin-maintenance');
+            } else {
+                alert('Invalid credentials. Please check username or password...');
+            }
+        } else {
+            alert('Failed to login. Please try again later...');
         }
     };
-  
     const handleBackToLogin = () =>{
         nav('/log-in');
     }
