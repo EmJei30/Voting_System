@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const router = require('./Router/Router');
 const app = express();
-const port = 6061;
+const port = 8080;
 const server = http.createServer(app);
 const socketIo = require('socket.io');
 
