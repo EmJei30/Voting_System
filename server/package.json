@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "build": "babel . -d dist"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +19,10 @@
     "mysql": "^2.18.1",
     "mysql2": "^3.9.2",
     "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.1",
+    "@babel/core": "^7.24.3",
+    "@babel/preset-env": "^7.24.3"
   }
 }
