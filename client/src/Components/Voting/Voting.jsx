@@ -26,7 +26,8 @@ import warning from '../../assets/warning.png';
 import logo from '../../assets/logo2.png';
 import logobig from '../../assets/logo2big.png';
 const Voting = () => {
-    const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, candidates, setCandidates,  usersID, setUsersID, setVoteRecords, membersInfo, setMembersInfo, otpCode, setOtpCode } = useContext(VotingContext);
+    const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, candidates, setCandidates,  usersID, setUsersID, setVoteRecords, membersInfo, 
+            VoteTransactions, setVoteTransactions, setMembersInfo, otpCode, setOtpCode } = useContext(VotingContext);
     const [uploadedCsvFile, setUploadedCsvFile] = useState([]);
     const [selectedRecords, setSelectedRecords] = useState([]);
     const [groupedCandidates, setGroupedCandidates] = useState([]);
@@ -44,6 +45,7 @@ const Voting = () => {
     const [isSuccess, setIsSuccess]= useState(false);
     const [isConfirmSubmit, setIsConfirmSubmit]= useState(false);
 
+    const [VotingPosition, setVotingPosition] = useState('');
     const [timer, setTimer] = useState(0);
     const [intervalId, setIntervalId] = useState(null);
 
@@ -57,7 +59,8 @@ const Voting = () => {
 
     console.log('membersInfo',membersInfo)
     useEffect(() => {
-        fetchCandidates();
+      
+        // fetchCandidates();
         fetchCandidatesMaxCount();
         const selectedCandidateJSON = localStorage.getItem('selectedCandidate');
         const selectedcandidate = selectedCandidateJSON ? JSON.parse(selectedCandidateJSON) : {}; 
@@ -72,6 +75,17 @@ const Voting = () => {
         setSelectedRecords(selectedrecords)
         setIsSubmitted(issubmitted);
         setSelectedCandidate(selectedcandidate)
+
+       
+    // Get voting position from sessionStorage
+    const votingPos = localStorage.getItem('VotingPosition');
+    setVotingPosition(votingPos);
+    if(votingPos === 'ALL'){
+        fetchCandidates();
+    }else{
+        fetchCandidatesSinglePost(votingPos);
+    }
+
     }, []);
 
     useEffect(()=>{
@@ -119,6 +133,27 @@ const Voting = () => {
     const fetchCandidates = async () => {
         try {
             const response = await fetch(`${assignedURL}/get_candidates_info`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+                    console.log(data);
+                    const list = CandidatesList(data);
+                    console.log('grouped', list);
+                    setGroupedCandidates(list);
+                } else {
+                    console.log('No Records')
+                }
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+       const fetchCandidatesSinglePost = async (votePos) => {
+        try {
+            const queryParams = new URLSearchParams({votePos: votePos});
+            const response = await fetch(`${assignedURL}/get_candidates_info_per_position?${queryParams}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
@@ -363,8 +398,17 @@ const Voting = () => {
     const handleSubmitVote = async() =>{
         const positionsWithNoCandidates = [];
 
+        let newMax;
+
+        if(VotingPosition === 'ALL'){
+            newMax = maxCandidatesPerPositionState;
+        }else{
+            newMax = maxCandidatesPerPositionState.filter(rec => rec.Candidate_Position === VotingPosition);
+        }
+        console.log('newMax', newMax, maxCandidatesPerPositionState)
+        
         // Iterate over maxCandidatesPerPositionState
-        for (const positionData of maxCandidatesPerPositionState) {
+        for (const positionData of newMax) {
             const positionExists = Object.keys(selectedCandidate).includes(positionData.Candidate_Position);
             if (!positionExists) {
                 // If the Candidate_Position doesn't exist in selectedCandidate, add it to positionsWithNoCandidates
@@ -393,7 +437,6 @@ const Voting = () => {
             return; // Exit the function
         }
     
-
         /**Update the state to destruction into the group */
         const UpdatedCandidates = Object.values(selectedCandidate).flat();
 
@@ -405,7 +448,7 @@ const Voting = () => {
         }));
         
        /**create a group for Candidate Position */
-        const grouped = maxCandidatesPerPositionState.reduce((acc, candidate) => {
+        const grouped = newMax.reduce((acc, candidate) => {
             const position = candidate.Candidate_Position;
             acc[position] = []; // Initialize each position with an empty array
             return acc;
@@ -437,7 +480,7 @@ const Voting = () => {
     // console.log('submit vote', timer)
     const handleSubmitVoteFinal = async() =>{
         console.log('submit vote', selectedCandidate)
-        
+        console.log('submit vote', dataForConfirmation)
         /**Update the state to destruction into the group */
         const UpdatedCandidates = Object.values(selectedCandidate).flat();
 
@@ -461,6 +504,9 @@ const Voting = () => {
             if (response.ok) {
                 clearInterval(intervalId);
                 setVoteRecords(prevVoteRecors => [...prevVoteRecors,...updatedCandidatesWithVotersName ])
+                setNotificationMSG('');
+                setNotificationMSG2('');
+                setIsNotification(false);
                 setIsSubmitted(true)
                 localStorage.setItem('isSubmitted', true)
                 setIsSubmitConfirmation(true)  
@@ -468,10 +514,9 @@ const Voting = () => {
                 // setNotificationMSG(`Vote successfully submitted ?...`)
                 // setIsSuccess(true);
                 // setTimeout(() => {
-                    setNotificationMSG('');
-                    setNotificationMSG2('');
+                   
                 //     setIsSuccess(false);
-                    setIsNotification(false);
+            
                 // }, 5000);
                 // setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
             } else {
@@ -607,7 +652,7 @@ const Voting = () => {
     const handleClose = () =>{
         setIsSubmitConfirmation(false);
     }
-    console.log('dataForConfirmation', dataForConfirmation);
+    console.log('candidates', candidates);
     const HandelResetVote = () =>{
         if(isSubmitted){
             // alert('Vote already submitted...')
@@ -915,15 +960,14 @@ const Voting = () => {
                                                     }
                                                 }}
                                             >
-
-                                                <div className="candidate-image-container">
-                                                    {Array.isArray(selectedRecords) && selectedRecords.some(record => record.id === candidate.id) && <div className="circle-check-con"><DoneRoundedIcon className="circle-check" /></div>}
-                                                    <img
-                                                        src={`${assignedURL}/images/${candidate.Image_File}`}
-                                                        alt={candidate.Candidate_Name}
-                                                        className={`candidate-image ${Array.isArray(selectedRecords) && selectedRecords.some(record => record.id === candidate.id) ? 'selectedImage' : ''}`}
-                                                    />
-                                                </div>
+                                                    <div className="candidate-image-container">
+                                                        {Array.isArray(selectedRecords) && selectedRecords.some(record => record.id === candidate.id) && <div className="circle-check-con"><DoneRoundedIcon className="circle-check" /></div>}
+                                                        <img
+                                                            src={`${assignedURL}/images/${candidate.Image_File}`}
+                                                            alt={candidate.Candidate_Name}
+                                                            className={`candidate-image ${Array.isArray(selectedRecords) && selectedRecords.some(record => record.id === candidate.id) ? 'selectedImage' : ''}`}
+                                                        />
+                                                    </div>
                                                 <div className="candidate-name-container4"><p className={candidates.length > 9 ? "asdadasd2" : "asdadasd"}>{candidate.Candidate_Name}</p></div>
                                             </div>
                                         ))}

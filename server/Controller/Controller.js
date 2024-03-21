@@ -189,6 +189,20 @@ const get_candidates_info = async(req, res) => {
           res.status(500).send('An error occurred while retrieving the products.');
       }
 };
+/**Get Candidates Info  per position*/
+const get_candidates_info_per_position = async(req, res) => {
+    const {votePos} = req.query;
+    console.log('get members info', votePos)
+      const database = 'candidates';
+      try {
+          const query = `SELECT * FROM ${database} WHERE Candidate_Position = '${votePos}'`;
+          const results = await executeQuery(query);
+          res.json(results);
+      } catch (error) {
+          console.error('Error:', error);
+          res.status(500).send('An error occurred while retrieving the products.');
+      }
+};
 
 /**Get Candidates max count */
 const get_candidates_max_count = async(req, res) => {
@@ -501,26 +515,128 @@ const update_member_status = async (req, res) => {
         return res.status(500).json({ error: 'Error updating vote count' });
     }
 };
+const update_candidate_multirun = async (req, res) => {
+    const io = require('../server').io;
 
+    console.log(req.body);
+    const updates = req.body;
+    const memberDatabase = 'candidates';
+    const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const {positionMultiRun} = updates;
+    console.log(updates);
+    // if (!updates || !updates.length) {
+    //     console.log('error')
+    //     return res.status(400).json({ error: 'Invalid updates' });
+    // }
+
+    try {
+        const query = `UPDATE ${memberDatabase} SET Is_Multi_Run = ? WHERE Candidate_Position = ?`;
+
+        // Update vote count for the candidate
+        await new Promise((resolve, reject) => {
+            connection.query(query, ['Yes', positionMultiRun], async (updateErr, _result) => {
+                if (updateErr) {
+                    console.error(`Error updating vote count for candidate ${positionMultiRun}:`, updateErr);
+                    reject(updateErr);
+                } else {
+                 resolve();
+                }
+            });
+        });
+
+        // Emit a Socket.io event to inform other users about the update with all records
+        // io.emit('UpdatedVoteCount', records);
+        return res.status(200).json({ message: 'Records updated successfully'});
+    } catch (error) {
+        console.error('Error updating vote count:', error);
+        return res.status(500).json({ error: 'Error updating vote count' });
+    }
+};
+
+const update_candidate_multirun_false = async (req, res) => {
+    const io = require('../server').io;
+
+    console.log(req.body);
+    const updates = req.body;
+    const memberDatabase = 'candidates';
+    const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const {positionMultiRun} = updates;
+    console.log(updates);
+    // if (!updates || !updates.length) {
+    //     console.log('error')
+    //     return res.status(400).json({ error: 'Invalid updates' });
+    // }
+
+    try {
+
+        const checkAllCandidatesMultiple = `SELECT * FROM ${memberDatabase} WHERE Is_Multi_Run = 'Yes' AND Candidate_Position = '${positionMultiRun}'`;
+        const executeAllCandidatesMultiple = await executeQuery(checkAllCandidatesMultiple);
+
+        if(executeAllCandidatesMultiple.length <= 0){
+            res.status(500).json({ error: error.message });
+        }
+
+        console.log(executeAllCandidatesMultiple)
+        const query = `UPDATE ${memberDatabase} SET Is_Multi_Run = ? WHERE Candidate_Position = ?`;
+
+        // Update vote count for the candidate
+        await new Promise((resolve, reject) => {
+            connection.query(query, ['', positionMultiRun], async (updateErr, _result) => {
+                if (updateErr) {
+                    console.error(`Error updating vote count for candidate ${positionMultiRun}:`, updateErr);
+                    reject(updateErr);
+                } else {
+                 resolve();
+                }
+            });
+        });
+
+        // Emit a Socket.io event to inform other users about the update with all records
+        // io.emit('UpdatedVoteCount', records);
+        return res.status(200).json({ message: 'Records updated successfully'});
+    } catch (error) {
+        console.error('Error updating vote count:', error);
+        return res.status(500).json({ error: 'Error updating vote count' });
+    }
+};
 /**Function to start vote */
 const create_new_voting_date = async (req, res) => {
     const io = require('../server').io;
 
     const database = 'voting_transaction';
+    const candidateDB = 'candidates';
+
     console.log('asdasdas', req.body)
     const {
         StartDate,
         StartTime,
         EndDate,
-        EndTime
+        EndTime,
+        VotingPosition
       } = req.body;
     try {
-        const checkExistenceQueryOpen = `SELECT * FROM ${database} WHERE Voting_Status = ?`;
-        const checkExistenceQuery = `SELECT * FROM ${database} WHERE Voting_Start_Date = ? AND Voting_Status = ?`;
-       
-        const existingRecordsOpen = await executeQuery(checkExistenceQueryOpen, 'Open');
-        const existingRecords = await executeQuery(checkExistenceQuery, [StartDate, 'Open']);
 
+        let checkExistenceQueryOpen;
+        let checkExistenceQuery;
+       
+        let existingRecordsOpen;
+        let existingRecords;
+
+        if(VotingPosition === 'ALL'){
+            checkExistenceQueryOpen = `SELECT * FROM ${database} WHERE Voting_Status = ?`;
+            checkExistenceQuery = `SELECT * FROM ${database} WHERE Voting_Start_Date = ? AND Voting_Status = ?`;
+          
+            existingRecordsOpen = await executeQuery(checkExistenceQueryOpen,['Open']);
+            existingRecords = await executeQuery(checkExistenceQuery, [StartDate, 'Open']);
+        }else{
+             checkExistenceQueryOpen = `SELECT * FROM ${database} WHERE Voting_Status = ? AND Voting_Position = ?`;
+             checkExistenceQuery = `SELECT * FROM ${database} WHERE Voting_Start_Date = ? AND Voting_Status = ? AND Voting_Position = ?`;
+           
+             existingRecordsOpen = await executeQuery(checkExistenceQueryOpen,['Open', VotingPosition]);
+             existingRecords = await executeQuery(checkExistenceQuery, [StartDate, 'Open', VotingPosition]);
+    
+        }
+      
         if (existingRecordsOpen.length > 0) {
             console.log('Date already exists');
             return res.status(400).send("Error submitting, Please close the current Voting process before creating new transaction..."); // Sending error message to frontend
@@ -531,6 +647,7 @@ const create_new_voting_date = async (req, res) => {
         }
 
         const newRecord = {
+            Voting_Position: VotingPosition,
             Voting_Start_Date: StartDate,
             Voting_Start_Time: StartTime,
             Voting_End_Date: EndDate,
@@ -542,11 +659,107 @@ const create_new_voting_date = async (req, res) => {
 
         const insertQuery = `INSERT INTO ${database} SET ?`;
         await executeQuery(insertQuery, newRecord);
+
+        const insertedRecord = await executeQuery(`SELECT * FROM ${database} WHERE id = LAST_INSERT_ID()`);
+        io.emit('OpenVotingTransactions', insertedRecord);
+
+
+
+        let executecheckMultiplePosition = [];
+
+        const updateAndInsertRecords = async (records) => {
+            for (const record of records) {
+                // Check if the record already exists in the database
+                // const checkQuery = `SELECT COUNT(*) AS count FROM ${candidateDB} WHERE Candidate_Position = ? AND Candidate_Name = ?`;
+                // const values = [record.Candidate_Position, record.Candidate_Name];
         
-           
-           // Query the database again to retrieve the newly inserted record
-           const insertedRecord = await executeQuery('SELECT * FROM voting_transaction WHERE id = LAST_INSERT_ID()');
-           io.emit('OpenVotingTransactions', insertedRecord);
+                try {
+                  
+        
+                  
+                        // Record doesn't exist, proceed with insertion
+                        // Update values of Candidate_Position and Voting_Status
+                        record.Candidate_Position = VotingPosition;
+                        record.Voting_Status = '';
+        
+                        // Format Created_At and Updated_At datetime values
+                        const createdAt = new Date(record.Created_At).toISOString().slice(0, 19).replace('T', ' ');
+                        const updatedAt = new Date(record.Updated_At).toISOString().slice(0, 19).replace('T', ' ');
+        
+                        // Update the Created_At and Updated_At properties in the record
+                        record.Created_At = createdAt;
+                        record.Updated_At = updatedAt;
+        
+                        // Remove the id property from the record
+                        delete record.id;
+
+                    const checkQuery = `SELECT * FROM ${candidateDB} WHERE Candidate_Position = ? AND Candidate_Name = ?`;
+                    const values = [record.Candidate_Position, record.Candidate_Name];
+
+                    const results = await executeQuery(checkQuery, values);
+
+                    if (results.length <= 0) {
+                        // Insert the record into the database
+                        const insertQuery = `INSERT INTO ${candidateDB} SET ?`;
+                        try {
+                            await executeQuery(insertQuery, record);
+                            console.log('Record inserted into the database:', record);
+                        } catch (error) {
+                            console.error('Error inserting record into the database:', error);
+                        }
+                    } else {
+                        // Record exists, skip insertion
+                        console.log('Record already exists in the database. Skipping insertion:', record);
+                    }
+                } catch (error) {
+                    console.error('Error checking if record exists:', error);
+                }
+            }
+        };
+
+        if(VotingPosition !== 'ALL'){
+            const checkMultiplePosition = `SELECT * FROM ${candidateDB} WHERE Candidate_Position != ? AND Is_Multi_Run = ?`;
+            executecheckMultiplePosition = await executeQuery(checkMultiplePosition,[VotingPosition, 'Yes']);
+
+                if(executecheckMultiplePosition.length > 0){
+                    console.log('There is other multiple position need to insert', executecheckMultiplePosition, VotingPosition);
+                    // Extract unique records based on Candidate_Name
+                    // Extract unique records based on Candidate_Name
+                    const hasElectedRecord = executecheckMultiplePosition.filter(record => record.Voting_Status === 'Elected');
+
+                    console.log('hasElectedRecord',hasElectedRecord)
+                    if(hasElectedRecord.length > 0){
+                        const remainingRecords = executecheckMultiplePosition.filter(record => {
+                            // Check if the Candidate_Name of the current record is found in any record of hasElectedRecord
+                            const foundInElected = hasElectedRecord.some(electedRecord => electedRecord.Candidate_Name === record.Candidate_Name);
+                            
+                            // Return true to keep the record if it's not found in hasElectedRecord, false otherwise
+                            return !foundInElected;
+                        });
+                        
+                        // console.log('Remaining records after removal:', remainingRecords.length, hasElectedRecord.length);
+                        await updateAndInsertRecords(remainingRecords);
+                    }else{
+                        const uniqueRecords = Array.from(new Set(executecheckMultiplePosition.map(record => JSON.stringify(record)))).map(JSON.parse);
+
+                        await updateAndInsertRecords(uniqueRecords);
+                    }
+                  
+                }else{
+                    console.log('no multiple position need to insert');
+                    
+                }
+               
+        }else{
+            console.log('voting is for all');
+        }
+      
+
+       
+        //    // Query the database again to retrieve the newly inserted record
+          
+
+
         res.status(200).send("Voting information uploaded successfully.");
     } catch (error) {
         console.error("Error uploading voting information:", error);
@@ -722,7 +935,6 @@ const register = async(req, res) => {
 };
 
 /**Reset all member voting status */
-
 const reset_all_member_status = async (req, res) => {
     const io = require('../server').io;
 
@@ -779,6 +991,116 @@ const reset_all_member_status = async (req, res) => {
         return res.status(500).json({ error: 'Error updating vote count' });
     }
 };
+
+/**Post Transaction */
+
+const post_vote_transaction = async (req, res) => {
+    const io = require('../server').io;
+
+    const {UpdatedCandidates, EditVotingPos, EditStartDate, EditEndDate }= req.body;
+    const updates = UpdatedCandidates;
+    const candidatesDatabase = 'candidates';
+    const voteTransactionDB = 'voting_transaction';
+    console.log(req.body);
+    try {
+        if (!updates || !Array.isArray(updates)) {
+            return res.status(400).json({ error: 'Invalid updates' });
+        }
+        /**Get all records, then return unique Positions */
+        const checkTransactions = `SELECT * FROM ${voteTransactionDB} WHERE Voting_Position = ? AND Voting_Start_Date = ? AND Voting_End_Date = ?`;
+        const executeCheckTransaction = await executeQuery(checkTransactions,[EditVotingPos, EditStartDate, EditEndDate]);
+
+        // Create an array to store matching records
+        const matchingRecords = [];
+
+        // Assuming candidates is an array of candidate objects
+        for (const candidate of updates) {
+            const { id, Candidate_Position, Voting_Status } = candidate;
+            const checkElected = `SELECT * FROM ${candidatesDatabase} WHERE id = ? AND Candidate_Position = ? AND Voting_Status = ?`;
+            const executeCheckElected = await executeQuery(checkElected, [id, Candidate_Position, 'Elected']);
+
+            // Check if any records were returned from the query
+            if (executeCheckElected.length > 0) {
+                // Record exists in the database based on the query
+                // Push the matching record to the matchingRecords array
+                matchingRecords.push(candidate);
+                console.log(`Record for candidate ${id} in position ${Candidate_Position} and voting status ${Voting_Status} already exists in the database.`);
+            } else {
+                // Record does not exist in the database based on the query
+                // Handle the case where the record does not exist
+                console.log(`Record for candidate ${id} in position ${Candidate_Position} and voting status ${Voting_Status} does not exist in the database.`);
+            }
+        }
+
+        // Outside the loop, you can use the matchingRecords array as needed
+        console.log('Matching records:', matchingRecords);
+
+        if(executeCheckTransaction.length <= 0){
+            console.log('matching ',executeCheckTransaction)
+            return res.status(400).json({message :'No matching vote transaction, please check Position and Date...'});
+        }
+        
+        if(matchingRecords.length > 0){
+            return res.status(400).json({message :'Failed : Transaction already posted...'});
+        }
+        // const uniquePositions = [...new Set(executeAllCandidates.map(item => item.Candidate_Position))];
+
+        //  /**Get all candidate which is valid for Multi Run */
+        //  const multiRunCandidates = `SELECT * FROM ${candidatesDatabase} WHERE Is_Multi_Run = ?`;
+        //  const executeMultiRunCandidates = await executeQuery(multiRunCandidates,['Yes']);
+   
+        // Iterate through each update
+        updates.forEach(update => {
+            const { id, Candidate_Position } = update;
+            const candidateStatus = 'Elected';
+            const query = `UPDATE ${candidatesDatabase} SET Voting_Status = ? WHERE id = ? AND Candidate_Position = ?`;
+
+            connection.query(query, [candidateStatus, id, Candidate_Position], async (updateErr, _result) => {
+                if (updateErr) {
+                    console.error('Error updating record:', updateErr);
+                } else {
+                      // Execute a query to fetch the updated record
+                    const selectUpdatedRecordQuery = `SELECT * FROM ${candidatesDatabase} WHERE id = ?`;
+                    connection.query(selectUpdatedRecordQuery, [id], (selectErr, updatedRecord) => {
+                        if (selectErr) {
+                            console.error('Error fetching updated record:', selectErr);
+                        } else {
+                            console.log('Updated record:', updatedRecord);
+                        }
+                    });
+                }
+            });
+        });
+    
+        if(EditVotingPos === 'ALL'){
+            // After the iteration, update records where Candidate_Position matches EditVotingPos and Voting_Status is ''
+            const updateQuery = `UPDATE ${candidatesDatabase} SET Voting_Status = 'Done' WHERE Voting_Status = ''`;
+            connection.query(updateQuery, [EditVotingPos], (updateErr, _result) => {
+                if (updateErr) {
+                    console.error('Error updating records:', updateErr);
+                } else {
+                    console.log(`Records where Candidate_Position equals ${EditVotingPos} and Voting_Status is '' have been updated to 'Done'.`);
+                }
+            });
+        }else{
+            // After the iteration, update records where Candidate_Position matches EditVotingPos and Voting_Status is ''
+            const updateQuery = `UPDATE ${candidatesDatabase} SET Voting_Status = 'Done' WHERE Candidate_Position = ? AND (Voting_Status = '' OR Voting_Status IS NULL)`;
+            connection.query(updateQuery, [EditVotingPos], (updateErr, _result) => {
+                if (updateErr) {
+                    console.error('Error updating records:', updateErr);
+                } else {
+                    console.log(`Records where Candidate_Position equals ${EditVotingPos} and Voting_Status is '' have been updated to 'Done'.`);
+                }
+            });
+        }
+
+        // console.log('updatePromises' , updatePromises);
+        return res.status(200).json({ message: 'Records updated successfully' });
+    } catch (error) {
+        console.error('Error updating vote count:', error);
+        return res.status(500).json({ error: 'Error updating vote count' });
+    }
+};
 module.exports = {
     saveImage,
     insertCandidate,
@@ -788,6 +1110,7 @@ module.exports = {
 
     get_members_info,
     get_candidates_info,
+    get_candidates_info_per_position,
     get_candidates_max_count,
 
     update_vote,
@@ -803,5 +1126,10 @@ module.exports = {
     /**Login */
     login,
     register,
-    reset_all_member_status
-};
+    reset_all_member_status,
+
+    /**Update candidate multi run status*/
+    update_candidate_multirun,
+    update_candidate_multirun_false,
+    post_vote_transaction
+}

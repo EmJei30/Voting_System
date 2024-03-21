@@ -55,6 +55,14 @@ const WinningCandidates = () => {
                     const matchingRecord = newRecord.find(record => record.id === candidate.id);
                     return matchingRecord ? { ...candidate, Vote_Count: matchingRecord.Vote_Count } : candidate;
                 });
+/**new update to insert multi position on winning dashboard */
+                // Add new records from newRecord to candidates if there's a match based on ID and Candidate_Position
+newRecord.forEach(record => {
+    const exists = candidates.some(candidate => candidate.id === record.id && candidate.Candidate_Position === record.Candidate_Position);
+    if (!exists) {
+        updatedData.push(record);
+    }
+});
                 console.log('updatedData', updatedData);
                 // Update the candidates state
                 setCandidates(updatedData);

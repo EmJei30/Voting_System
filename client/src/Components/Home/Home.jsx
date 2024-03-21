@@ -21,7 +21,7 @@ import { FaQuestion } from "react-icons/fa6";
 
 const Home = () => {
     const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, setCandidates, candidates, groupedCandidates, membersInfo, setMembersInfo, VoteTransactions, setVoteTransactions,
-			setGroupedCandidates, maxCandidatesPerPositionState, setMaxCandidatesPerPositionState, highestVoteCount, setHighestVoteCount } = useContext(VotingContext);
+			setGroupedCandidates, maxCandidatesPerPositionState, setMaxCandidatesPerPositionState, highestVoteCount, setHighestVoteCount,  } = useContext(VotingContext);
     const [activeTab, setActiveTab] = useState(0);
     const [uploadedCsvFile, setUploadedCsvFile] = useState([]);
 	const [istoggleUploads, setIstoggleUpload] = useState(false);
@@ -33,7 +33,9 @@ const Home = () => {
 	const [isMemberOpen, setIsMemberOpen] = useState(false);
 	const [isUpdateMember, setIsUpdateMember] = useState(false);
 	const [isUserSetupOpen, setIsUserSetupOpen] = useState(false);
-
+	const [isPostWinnersOpen, setIstPostWinnersOpen] = useState(false);
+	const [isPostVoteTransaction, setIsPostVoteTransaction]= useState(false);
+	const [isForReserved, setIsForReserved] = useState(false);
 	// const [groupedCandidates, setGroupedCandidates] = useState([]);
 	// const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
 	// const [highestVoteCount, setHighestVoteCount]= useState([]);
@@ -43,10 +45,16 @@ const Home = () => {
 	const [StartTime, setStartTime] = useState('');
 	const [EndDate, setEndDate] = useState('');
 	const [EndTime, setEndTime] = useState('');
+
+	/**Set position list  */
+	const [positionList, setPositionList] = useState([]);
+	const [selectedOpenPosition, setSelectedOpenPosition] = useState('');
+	const [positionMultiRun, setPositionMultiRun] = useState('');
 	/**current url */
 	const [currentUrl, setCurrentUrl] = useState('');
 
 	/**Update vote transaction */
+	const [EditVotingPos, setEditVotingPos] = useState('');
 	const [EditStartDate, setEditStartDate] = useState('');
 	const [EditStartTime, setEditStartTime] = useState('');
 	const [EditEndDate, setEditEndDate] = useState('');
@@ -56,24 +64,27 @@ const Home = () => {
 	/**user set up */
 
 	const [username, setUsername] = useState('');
+
 	const [password, setPassword] = useState('');
 	const [adminName, setAdminName] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 
 	/**members */ 
 	const [doneVoters, setDoneVoters] = useState([]);
+
 	const [fileUploaded, setFileUploaded] = useState('');
     const nav = useNavigate();
 
 	useEffect(()=>{
+		fetchCandidatesMaxCount();
 		fetchVotingTransactions();
 		fetchCandidates();
-		fetchCandidatesMaxCount();
 		if (membersInfo.length > 0) {
             const doneMembers = membersInfo.filter(member => member.Voting_Status === 'Done');
             setDoneVoters(doneMembers)
             // Now 'doneMembers' contains only members with Voting_Status equal to 'Done'
         }
+	
 		if(VoteTransactions.length > 0){
 			const dateStart = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
 			const sd = convertDateFormat(dateStart)
@@ -105,6 +116,9 @@ const Home = () => {
 
 	useEffect(()=>{
 		if(VoteTransactions.length > 0){
+			const votePos = VoteTransactions[0].Voting_Position;
+			setEditVotingPos(votePos);
+
 			const dateStart = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
 			const sd = convertDateFormat(dateStart)
 			setEditStartDate(sd);
@@ -123,7 +137,8 @@ const Home = () => {
 			const et = convertTo12HourFormat(timeEnd)
 			setEditEndTime(timeEnd);	
 		}
-	},[VoteTransactions])
+	},[VoteTransactions]);
+
     const handleTabClick = (tabIndex) => {
         setActiveTab(tabIndex);
     };
@@ -158,15 +173,26 @@ const Home = () => {
                 )
             );
 			setDoneVoters(prev => {
-                // Check if newRecord's Voting_Status is 'Done'
-                if (newRecord.Voting_Status === 'Done') {
-                    // Add newRecord to the previous state
-                    return [...prev, newRecord];
-                } else {
-                    // If Voting_Status is not 'Done', return the previous state unchanged
-                    return prev;
-                }
-            });
+				// Check if newRecord's Voting_Status is 'Done'
+				if (newRecord.Voting_Status === 'Done') {
+					// Check if the id already exists in the previous state
+					const existingRecordIndex = prev.findIndex(record => record.id === newRecord.id);
+			
+					// If the id exists, update its status
+					if (existingRecordIndex !== -1) {
+						const updatedDoneVoters = [...prev];
+						updatedDoneVoters[existingRecordIndex] = newRecord;
+						return updatedDoneVoters;
+					} else {
+						// If the id doesn't exist, add newRecord to the previous state
+						return [...prev, newRecord];
+					}
+				} else {
+					// If Voting_Status is not 'Done' and the record exists, remove it
+					const filteredDoneVoters = prev.filter(record => record.id !== newRecord.id);
+					return filteredDoneVoters;
+				}
+			});
         });
         return () => {
             socket.disconnect();
@@ -186,122 +212,128 @@ const Home = () => {
 
         return groupedCandidates;
     };
+	console.log(maxCandidatesPerPositionState)
 	/**Fetch */
-	const fetchCandidates = async () => {
-        try {
-            const response = await fetch(`${assignedURL}/get_candidates_info`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.length > 0) {
-                    console.log(data);
-                 
-                    setCandidates(data)
+/**reusable function to get highest / winners  */
 
-                    let totalVotesPerPosition = {};
+	const HighestVoteCount = (data, max,) => {
+		let totalVotesPerPosition = {};
 
-                    data.forEach(candidate => {
-                        if (candidate.Vote_Count > 0) {
-                            // Check if the position already exists in the totalVotesPerPosition object
-                            if (!totalVotesPerPosition[candidate.Candidate_Position]) {
-                                // If it doesn't exist, initialize the total votes for that position
-                                totalVotesPerPosition[candidate.Candidate_Position] = candidate.Vote_Count;
-                            } else {
-                                // If it exists, add the candidate's vote count to the existing total votes for that position
-                                totalVotesPerPosition[candidate.Candidate_Position] += candidate.Vote_Count;
-                            }
-                        }
-                    });
-                    
-                    // Iterate over the newRecord array to add the Total_Votes property
-                    const newRecordWithTotalVotes = data.map(candidate => ({
-                        ...candidate,
-                        Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
-                    }));
-                
-                    console.log('data', data);
-                    const list = CandidatesList(newRecordWithTotalVotes);
-                    console.log('grouped', list);
-                    setGroupedCandidates(list);
-                    // Find the entry with the highest Vote_Count
-                    // let maxVoteCount = 0;
-                    // let candidatesWithMaxVoteCount = [];
+		data.forEach(candidate => {
+			if (candidate.Vote_Count > 0) {
+				// Check if the position already exists in the totalVotesPerPosition object
+				if (!totalVotesPerPosition[candidate.Candidate_Position]) {
+					// If it doesn't exist, initialize the total votes for that position
+					totalVotesPerPosition[candidate.Candidate_Position] = candidate.Vote_Count;
+				} else {
+					// If it exists, add the candidate's vote count to the existing total votes for that position
+					totalVotesPerPosition[candidate.Candidate_Position] += candidate.Vote_Count;
+				}
+			}
+		});
 
-                    // data.forEach(candidate => {
-                    //     if (candidate.Vote_Count > maxVoteCount) {
-                    //         maxVoteCount = candidate.Vote_Count;
-                    //         candidatesWithMaxVoteCount = [candidate];
-                    //     } else if (candidate.Vote_Count === maxVoteCount) {
-                    //         candidatesWithMaxVoteCount.push(candidate);
-                    //     }
-                    // });
-                    let candidatesWithMaxVotePerPosition = {}; // Object to store candidates with the highest vote count per position
+		// Iterate over the newRecord array to add the Total_Votes property
+		const newRecordWithTotalVotes = data.map(candidate => ({
+			...candidate,
+			Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
+		}));
+		console.log('newRecordWithTotalVotes', newRecordWithTotalVotes)
+		// Group the updated candidates by position
+		const list = CandidatesList(newRecordWithTotalVotes);
+		setGroupedCandidates(list);
 
-                    const maxCandidatePerPositionState = maxCandidatesPerPositionState;
-                    
-                    // Initialize the candidatesWithMaxVotePerPosition object with arrays for each position
-                    maxCandidatePerPositionState.forEach(position => {
-                        candidatesWithMaxVotePerPosition[position.Candidate_Position] = [];
-                    });
-                    console.log('candidatesWithMaxVotePerPosition2',maxCandidatePerPositionState)
-                    console.log('candidatesWithMaxVotePerPosition2',candidatesWithMaxVotePerPosition)
-                    // Find the maximum vote count for each position
-                    const topVoteCountsPerPosition = {};
-                    Object.values(maxCandidatePerPositionState).forEach(positionData => {
-                        const position = positionData.Candidate_Position;
-                        const maxCandidates = positionData.Candidate_Count;
-                    
-                        // Find candidates for this position
-                        const candidatesForPosition = data.filter(candidate => candidate.Candidate_Position === position);
-                    
-                        // Sort candidates by Vote_Count in descending order
-                        candidatesForPosition.sort((a, b) => b.Vote_Count - a.Vote_Count);
-                    
-                        // Get the top Vote_Count values for this position, ensuring uniqueness
-                        let topVoteCounts = [];
-                        let currentRank = 1;
-                        for (let i = 0; i < candidatesForPosition.length && topVoteCounts.length < maxCandidates; i++) {
-                            const candidate = candidatesForPosition[i];
-                            if (!topVoteCounts.includes(candidate.Vote_Count)) {
-                                topVoteCounts.push(candidate.Vote_Count);
-                                currentRank++;
-                            }
-                        }
-                        topVoteCountsPerPosition[position] = topVoteCounts;
-                    });
-                    
-                    
-                    
-                    console.log('topVoteCountsPerPosition', topVoteCountsPerPosition);
-                    // Now, filter the candidates based on the top Vote_Count values
-                    const candidatesInTopRanking = [];
-                    data.forEach(candidate => {
-                        const position = candidate.Candidate_Position;
-                        const topVoteCounts = topVoteCountsPerPosition[position];
+		let candidatesWithMaxVotePerPosition = {}; // Object to store candidates with the highest vote count per position
 
-                        if (topVoteCounts && topVoteCounts.includes(candidate.Vote_Count)) {
-                            // If the candidate's Vote_Count is within the top Vote_Count values for this position, add it
-                            candidatesInTopRanking.push(candidate);
-                        }
-                    });
+		const maxCandidatePerPositionState = max;
 
-                    // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-                    console.log('candidatesInTopRanking',candidatesInTopRanking);
-                    const highestlist = CandidatesList(candidatesInTopRanking);
-                    setHighestVoteCount(highestlist);
-                    
+		// Initialize the candidatesWithMaxVotePerPosition object with arrays for each position
+		maxCandidatePerPositionState.forEach(position => {
+			candidatesWithMaxVotePerPosition[position.Candidate_Position] = [];
+		});
 
-                } else {
-                    console.log('No Records')
-                }
-            } else {
-                console.error('Error:', response.status);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
- 
-    const fetchCandidatesMaxCount = async () => {
+		const topVoteCountsPerPosition = {};
+		Object.values(maxCandidatePerPositionState).forEach(positionData => {
+			const position = positionData.Candidate_Position;
+			const maxCandidates = positionData.Candidate_Count;
+
+			// Find candidates for this position
+			const candidatesForPosition = data.filter(candidate => candidate.Candidate_Position === position);
+
+			// Sort candidates by Vote_Count in descending order
+			candidatesForPosition.sort((a, b) => b.Vote_Count - a.Vote_Count);
+
+			// Get the top Vote_Count values for this position, ensuring uniqueness and greater than 0
+			let topVoteCounts = [];
+			let currentRank = 1;
+			for (let i = 0; i < candidatesForPosition.length && topVoteCounts.length < maxCandidates; i++) {
+				const candidate = candidatesForPosition[i];
+				if (candidate.Vote_Count > 0 && !topVoteCounts.includes(candidate.Vote_Count)) {
+					topVoteCounts.push(candidate.Vote_Count);
+					currentRank++;
+				}
+			}
+			topVoteCountsPerPosition[position] = topVoteCounts;
+		});
+
+
+
+
+		console.log('topVoteCountsPerPosition', topVoteCountsPerPosition, maxCandidatePerPositionState);
+		// Now, filter the candidates based on the top Vote_Count values
+		const candidatesInTopRanking = [];
+		data.forEach(candidate => {
+			const position = candidate.Candidate_Position;
+			const topVoteCounts = topVoteCountsPerPosition[position];
+
+			if (topVoteCounts && topVoteCounts.includes(candidate.Vote_Count)) {
+				// If the candidate's Vote_Count is within the top Vote_Count values for this position, add it
+				candidatesInTopRanking.push(candidate);
+			}
+		});
+
+		// Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
+		console.log('candidatesInTopRanking', candidatesInTopRanking);
+		const highestlist = CandidatesList(candidatesInTopRanking);
+
+		console.log('11111', candidatesInTopRanking);
+		console.log('11112', maxCandidatePerPositionState)
+		console.log('11113', topVoteCountsPerPosition);
+
+
+		/**Filter the Highest vote counts and return only exactly the maximum count per position based on Vote_Count */
+		const storage = {};
+
+		// Iterate through each position
+		for (const position in topVoteCountsPerPosition) {
+			if (!topVoteCountsPerPosition.hasOwnProperty(position)) continue;
+
+			const positionVoteCounts = topVoteCountsPerPosition[position];
+			const maxCount = maxCandidatePerPositionState.find(entry => entry.Candidate_Position === position).Candidate_Count;
+
+			if (!maxCount) continue; // Skip if max count not found
+
+			// Initialize an array to store candidates for this position
+			storage[position] = [];
+
+			// Iterate through each vote count for the position
+			for (const voteCount of positionVoteCounts) {
+				// Collect candidates with the current vote count
+				const candidatesWithVoteCount = candidatesInTopRanking.filter(candidate =>
+					candidate.Candidate_Position === position && candidate.Vote_Count === voteCount
+				);
+
+				// Push all candidates with the same vote count
+				storage[position] = storage[position].concat(candidatesWithVoteCount);
+
+				// Check if the maximum count is reached for this position
+				if (storage[position].length >= maxCount) break;
+			}
+		}
+		return storage
+	}
+
+
+	const fetchCandidatesMaxCount = async () => {
         try {
             const response = await fetch(`${assignedURL}/get_candidates_max_count`);
             if (response.ok) {
@@ -320,6 +352,35 @@ const Home = () => {
         }
     }
 
+	const fetchCandidates = async () => {
+        try {
+            const response = await fetch(`${assignedURL}/get_candidates_info`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+                    console.log('sadadasdasda',data);
+                 
+                    setCandidates(data)
+
+					const uniquePositions = [...new Set(data.map(item => item.Candidate_Position))];
+					setPositionList(uniquePositions)
+
+				
+            
+                // const matchedCandidates = matchCandidatesWithVoteCounts(candidatesInTopRanking, topVoteCountsPerPosition);
+                // setHighestVoteCount(storage);   
+                } else {
+                    console.log('No Records')
+                }
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+ 
+   
 	const fetchVotingTransactions = async () => {
         try {
             const response = await fetch(`${assignedURL}/get_voting_transactions`);
@@ -489,6 +550,7 @@ const Home = () => {
 		setFileUploaded(fileType);
 		document.getElementById('fileInput').click();
 	};
+
 	/**Function handling upload of Candidates */
 	const handleInsertCandidates = async (parsedData) => {
         // console.log('parsedData', parsedData)
@@ -520,6 +582,7 @@ const Home = () => {
 			setUploadedCsvFile([]);
 			// setNotification_message('File successfully uploaded!!');
 	};
+
 	/**Function handling upload of Members */
 	const handleInsertMembers = async (parsedData) => {
         console.log('Members', parsedData)
@@ -560,6 +623,7 @@ const Home = () => {
 			setUploadedCsvFile([]);
 			// setNotification_message('File successfully uploaded!!');
 	};
+
 	const generateOTP = (existingOTPCodes) => {
 		const otp = Math.floor(10000 + Math.random() * 90000).toString(); // Generate OTP code
 		if (existingOTPCodes.has(otp)) {
@@ -567,6 +631,7 @@ const Home = () => {
 		}
 		return otp;
 	  }
+
 	/**Function handling upload of Candidates */
 	const handleInsertCandidatesMaxCount = async (parsedData) => {
 		// console.log('parsedData', parsedData)
@@ -597,19 +662,21 @@ const Home = () => {
 		setUploadedCsvFile([]);
 		// setNotification_message('File successfully uploaded!!');
 	};
+
 	/**Navigate to dashboard */
 	const handleNavigateToDashboard = () =>{
 		nav('/voting-dashboard')
 	}
+
 	/**Navigate to winning candidates */
 	const handleNavigateToDashboardWinning = () =>{
 		nav('/winning-dashboard')
 	}	
 
 	/** */
-	/**Set Voting  date*/
+	/**creating Voting  date*/
 	const handleSubmitVoteDate = async() =>{
-		if(StartDate === '' || StartTime === '' || EndDate === '' || EndTime === ''){
+		if(StartDate === '' || StartTime === '' || EndDate === '' || EndTime === '' || selectedOpenPosition ===''){
 			alert('Please complete Start or End Date and Time...');
 			return
 		}
@@ -617,7 +684,8 @@ const Home = () => {
 				StartDate: StartDate,
 				StartTime: StartTime,
 				EndDate: EndDate,
-				EndTime: EndTime
+				EndTime: EndTime,
+				VotingPosition: selectedOpenPosition
 			}
 			console.log('newVote',newVoteTransaction)
 			try {
@@ -631,10 +699,12 @@ const Home = () => {
 
 				if (response.ok) {
 					// Add an ID to your image input element
+				
 					setStartDate('');
 					setStartTime('');
 					setEndDate('');
 					setEndTime('');
+					setSelectedOpenPosition('');
 					alert('Voting date and time successfully added...'); 
 				}else {
 					const errorMessage = await response.text();
@@ -646,6 +716,7 @@ const Home = () => {
 				console.log('An error occurred:', error.message);
 			}
 	}
+
 	/**Update vote date */
 	const handleUpdateVoteDate = async() =>{
 		const UpdatedVoteTransaction = {
@@ -692,10 +763,12 @@ const Home = () => {
 		setIsForceClose(true);
 		setNotificationMSG('Are you sure you want to force closed the transaction ?');
 	}
+
 	const handleCloseNotification = () =>{
 		setIsForceClose(false);
 		setNotificationMSG('')
 	}
+
 	const handleForceCloseYes = async() =>{
 		const updatedMemberStatus = {
             VoteTransactions: VoteTransactions,
@@ -712,6 +785,7 @@ const Home = () => {
             if (response.ok) {
 				setIsForceClose(false);
 				setNotificationMSG('');
+				localStorage.removeItem('VotingPosition');
 				alert('Voting Transaction successfully closed...');
                 // setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
             } else {
@@ -726,28 +800,58 @@ const Home = () => {
 	const handleVotingDate = () =>{
 		setIsVotingDateUpdate(false);
 		setIsVotingDateOpen(true);
-		setIsUpdateMember(false)	
+		setIsUpdateMember(false);	
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
 	}
+
 	/**update voting */
 	const handleVotingUpdate = () =>{
 		setIsVotingDateUpdate(true);
 		setIsVotingDateOpen(false);
 		setIsUserSetupOpen(false);
 		setIsUpdateMember(false)
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
 	}
+
 	/**Update Member  */
 	const handleUpdateMember = () =>{
 		setIsVotingDateUpdate(false);
 		setIsVotingDateOpen(false);
 		setIsUserSetupOpen(false);
-		setIsUpdateMember(true)
+		setIsUpdateMember(true);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
 	}
+
 	/** handle user setup */
 	const handleUserSetup = () =>{
 		setIsVotingDateUpdate(false);
 		setIsVotingDateOpen(false);
 		setIsUserSetupOpen(true);
-		setIsUpdateMember(false)
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
+	}
+
+	/** handle user setup */
+	const handlePostWinners = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(true);
+		setIsForReserved(false);
+	}
+
+	const handleReRun = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(true);
 	}
 	/**Function to generate invitation */
 	const handleGeneratePDF = () =>{
@@ -765,6 +869,7 @@ const Home = () => {
 		}
 		
     }
+
 	const generatePDF = (membersInfo, formattedStartDate, formattedEndDate, formattedStartTime, formattedEndTime) => {
 		const doc = new jsPDF();
 	
@@ -952,6 +1057,7 @@ MC Election Committee
 			// Handle fetch error
 		}
 	};
+
 	/**function handling reset single record */
 	const handleResetSingle = async(rec) =>{
 			const updatedMemberStatus = {
@@ -977,6 +1083,7 @@ MC Election Committee
 				console.error('Error updating records:', error);
 			}
 	}
+
 	/**Function handling reset all members */
 	const handleResetAllMembers = async() =>{
 		try {
@@ -997,6 +1104,161 @@ MC Election Committee
 		} catch (error) {
 			console.error('Error updating records:', error);
 		}
+	}
+
+
+	/**Handle Post Transactions */
+	const handlePostTransaction = () =>{
+		const records = HighestVoteCount(candidates, maxCandidatesPerPositionState);
+		let UpdatedCandidates = [];
+		console.log('records222',records, EditVotingPos)
+		if(EditVotingPos === 'ALL' ){
+			UpdatedCandidates = Object.values(records).flat();
+			console.log('records',records)
+		}else{
+			const filteredRecord = records[EditVotingPos];
+			console.log('filteredRecord',filteredRecord)
+			UpdatedCandidates = Object.values(filteredRecord).flat();
+		}
+		
+		console.log('UpdatedCandidates',UpdatedCandidates)
+		if(UpdatedCandidates.length <= 0){
+			alert('No transaction to be posted ...');
+			return
+		}
+		if(VoteTransactions.length > 0){
+			alert('Failed to post transaction, Voting is currently open...');
+			return
+		}
+		if(EditEndDate === '' || EditStartDate === '' || EditVotingPos ===''){
+			alert('Please selecte Position and date to close...');
+			return
+		}
+		setNotificationMSG('Are you sure to post the vote transactions....')
+		setIsPostVoteTransaction(true);
+	}
+
+	const handlePostTransYes = async() =>{
+	
+		const records = HighestVoteCount(candidates, maxCandidatesPerPositionState);
+		let UpdatedCandidates = [];
+		console.log('records222',records, EditVotingPos)
+		if(EditVotingPos === 'ALL' ){
+			UpdatedCandidates = Object.values(records).flat();
+			console.log('records',records)
+		}else{
+			const filteredRecord = records[EditVotingPos];
+			console.log('filteredRecord',filteredRecord)
+			UpdatedCandidates = Object.values(filteredRecord).flat();
+		}
+	
+		const updatedCandidateStatus = {
+			UpdatedCandidates: UpdatedCandidates,
+			EditVotingPos: EditVotingPos,
+			EditStartDate: EditStartDate,
+			EditEndDate: EditEndDate
+		}
+		try {
+			const response = await fetch(`${assignedURL}/post_vote_transaction`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(updatedCandidateStatus),
+			});
+
+			if (response.ok) {
+				alert('Voting transaction successsfully posted...');
+				setEditVotingPos('');
+				setEditStartDate('');
+				setEditEndDate('');
+				setIsPostVoteTransaction(false);
+				// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+			} else {
+				if (response.status === 400) {
+					response.json().then(data => {
+						alert(data.message); // Display the error message from the server
+					});
+				} else {
+					console.error('Error updating records:', response.statusText);
+					// Handle other error cases here if needed
+				}
+			}
+		} catch (error) {
+
+			console.error('Error updating records:', error);
+		}
+
+	
+		// const sortedCandidates = 
+	}
+
+	const handleClose = () =>{
+		setNotificationMSG('')
+		setIsPostVoteTransaction(false);
+	}
+	
+	/**set up which position can run multiple positions when lose */
+	const handleUpdateMultiRunPosition = async() =>{
+		if(positionMultiRun === ''){
+			alert('No position is selected...')
+			return
+		}
+		const updatedMemberStatus = {
+            positionMultiRun: positionMultiRun,
+        }
+		try {
+			const response = await fetch(`${assignedURL}/update_candidate_multirun`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(updatedMemberStatus),
+			});
+
+			if (response.ok) {
+				setPositionMultiRun('');
+				alert(`Successfully updated ${positionMultiRun} position to allow multi-run...`);
+				// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+			} else {
+				console.error('Error updating records:', response.statusText);
+			}
+		} catch (error) {
+			console.error('Error updating records:', error);
+		}
+	
+	}
+	
+	/**set up which position can run multiple positions when lose */
+	const handleUpdateMultiRunPositionFalse = async() =>{
+		if(positionMultiRun === ''){
+			alert('No position is selected...')
+			return
+		}
+		const updatedMemberStatus = {
+            positionMultiRun: positionMultiRun,
+        }
+		try {
+			const response = await fetch(`${assignedURL}/update_candidate_multirun_false`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(updatedMemberStatus),
+			});
+
+			if (response.ok) {
+				setPositionMultiRun('');
+				alert(`Successfully updated ${positionMultiRun} position to remove allow multi-run...`);
+				// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+			} else {
+				// console.error('Error updating records:', response.statusText);
+				alert(`No record found Multiple position is valid...`);
+			}
+		} catch (error) {
+			console.error('Error updating records:', error);
+		}
+	
 	}
     return (
         // <div className="Home_Con">
@@ -1053,6 +1315,28 @@ MC Election Committee
                    </div>
                 </div>
              )} 
+			  {isPostVoteTransaction && (
+                 <div className="Voting-notification-container">
+                    <div className="notification-print">
+                        <div className="notification-header">
+                           <div className="confirm-icon-con"><FaQuestion className="confirm-icon"/>
+						   </div>
+                        </div>
+                        <div className="notification-content">
+                            <span>{notificationMSG}</span>
+                           
+                        </div>
+                       
+                            <div className="notification-button">
+                             
+                                    <button onClick={handlePostTransYes}  className="notification-button2">Confirm</button>
+                                    <button onClick={handleClose}  className="notification-button2">Cancel</button>
+                               
+                            </div>
+
+                   </div>
+                </div>
+             )} 
 			{/* <div className="home-background-template"><div className="home-background-template-inner"></div></div> */}
 			<div className="sidebar">
 				{/* <button class="toggle-btn" onClick={toggleSidebar}>Toggle Sidebar</button> */}
@@ -1086,6 +1370,8 @@ MC Election Committee
 						<div className="upload-sub-menus">
 							<button  onClick={handleVotingDate}>Start Voting</button>
 							<button  onClick={handleVotingUpdate}>Update Voting</button>
+							<button  onClick={handleReRun}>Set up Multi-run Position</button>
+							<button  onClick={handlePostWinners}>Post Winners</button>
 						</div>
 					</>}
 
@@ -1125,6 +1411,24 @@ MC Election Committee
 						</div> */}
 						<div className="voting-time-con">
 						<h2 style={{marginLeft: '15px'}}>Create Vote Transaction</h2>
+							<div className="voting-time-con-select">
+								<div><label>Voting Position:</label></div>
+								<div>
+									<select
+										value={selectedOpenPosition}
+										onChange={(event) => setSelectedOpenPosition(event.target.value)}>
+										<option value="">Select position</option>
+										<option value="ALL">ALL</option>
+										{positionList.length > 0 && (
+											positionList.map((pos, posIndex) => (
+												<option key={posIndex} value={pos}>
+													{pos}
+												</option>
+											))
+										)}
+									</select>
+								</div>
+							</div>	
 							<div className="voting-time">
 								
 								<div className="add-voting">
@@ -1276,7 +1580,122 @@ MC Election Committee
 						</div>
 					</div>
 					)}
-					
+					{isPostWinnersOpen && 
+					<>
+						{/* <div className="side-button">
+							<div className="side-button-start"><span>Start Vote</span></div>
+							<div className="side-button-update"><span>Update Vote</span></div>
+						</div> */}
+						<div className="voting-time-con">
+						<h2 style={{marginLeft: '15px'}}>Post Vote Transaction</h2>
+							<div className="voting-time-con-select">
+								<div><label>Voting Position:</label></div>
+								<div>
+									<select
+										
+										value={EditVotingPos}
+										onChange={(event) => setEditVotingPos(event.target.value)}>
+										<option value="">Select position</option>
+										<option value="ALL">ALL</option>
+										{positionList.length > 0 && (
+											positionList.map((pos, posIndex) => (
+												<option key={posIndex} value={pos}>
+													{pos}
+												</option>
+											))
+										)}
+									</select>
+								</div>
+							</div>	
+							<div className="voting-time">
+								
+								<div className="add-voting">
+								
+									<div className="add-voting-start">
+										<div className="add-voting-start-input">
+											<div><label>Start date:</label></div>
+											<div>&nbsp;<input type="date" value={EditStartDate} onChange={(e)=> setEditStartDate(e.target.value)}/></div>
+									
+											{/* <div><label>Start time:</label></div>
+											<div>&nbsp;<input type="time" value={EditStartTime} onChange={(e)=> setEditStartTime(e.target.value)} disabled={true}/></div> */}
+										</div>
+									</div>
+									<div className="add-voting-end">
+										<div className="add-voting-end-input">
+												<div><label>End date:</label></div>
+												<div>&nbsp;<input type="date" value={EditEndDate} onChange={(e)=> setEditEndDate(e.target.value)} /></div>
+												
+												{/* <div><label>End time:</label></div>
+												<div>&nbsp;<input type="time" value={EditEndTime} onChange={(e)=> setEditEndTime(e.target.value)} disabled={true}/></div> */}
+											</div>
+										</div>
+
+								</div>
+							</div>
+							<div className="voting-time-button">
+								<button className="voting-time-button-add" onClick={handlePostTransaction}>Post Transaction</button>
+								{/* <button className="voting-time-button-stop" onClick={handleCancelVoteDate}>Cancel</button> */}
+							</div>
+						</div>
+					</>
+					}
+					{isForReserved && 
+					<>
+						{/* <div className="side-button">
+							<div className="side-button-start"><span>Start Vote</span></div>
+							<div className="side-button-update"><span>Update Vote</span></div>
+						</div> */}
+						<div className="re-voting-time-con">
+						<h2 style={{marginLeft: '15px'}}>Update Multi-run Position</h2>
+							<div className="voting-time-con-select">
+								<div><label>Voting Position:</label></div>
+								<div>
+									<select
+										value={positionMultiRun}
+										onChange={(event) => setPositionMultiRun(event.target.value)}>
+										<option value="">Select position</option>
+										{positionList.length > 0 && (
+											positionList.map((pos, posIndex) => (
+												<option key={posIndex} value={pos}>
+													{pos}
+												</option>
+											))
+										)}
+									</select>
+								</div>
+							</div>	
+							{/* <div className="voting-time">
+								
+								<div className="add-voting">
+								
+									<div className="add-voting-start">
+										<div className="add-voting-start-input">
+											<div><label>Start date:</label></div>
+											<div>&nbsp;<input type="date" value={EditStartDate} onChange={(e)=> setEditStartDate(e.target.value)} disabled={true}/></div>
+									
+											<div><label>Start time:</label></div>
+											<div>&nbsp;<input type="time" value={EditStartTime} onChange={(e)=> setEditStartTime(e.target.value)} disabled={true}/></div>
+										</div>
+									</div>
+									<div className="add-voting-end">
+										<div className="add-voting-end-input">
+												<div><label>End date:</label></div>
+												<div>&nbsp;<input type="date" value={EditEndDate} onChange={(e)=> setEditEndDate(e.target.value)} disabled={true}/></div>
+										
+												<div><label>End time:</label></div>
+												<div>&nbsp;<input type="time" value={EditEndTime} onChange={(e)=> setEditEndTime(e.target.value)} disabled={true}/></div>
+											</div>
+										</div>
+
+								</div>
+							</div> */}
+							<div className="voting-time-button">
+								<button className="voting-time-button-add" onClick={handleUpdateMultiRunPosition}>Update</button>
+								<button className="voting-time-button-stop" onClick={handleUpdateMultiRunPositionFalse}>Remove Multiple</button>
+							</div>
+						</div>
+					</>
+					}
 				</div>
 			</div>
 		</div>

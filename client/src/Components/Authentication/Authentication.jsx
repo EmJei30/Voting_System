@@ -61,12 +61,14 @@ const Authentication = () =>{
                 console.log('newRecord',newRecord)
                 // console.log('voteStatus',voteStatus)
                 console.log('voteStatus',voteStatus)
+                localStorage.setItem('VotingPosition', voteStatus[0].Voting_Position);
             }
          
         });
         socket.on('CloseVotingTransactions',(newRecord) =>{
             setVoteTransactions([])
             setIsVotingOpen(false)
+            localStorage.removeItem('VotingPosition');
         });
         return () => {
             socket.disconnect();
@@ -260,9 +262,11 @@ console.log('VoteTransactions',VoteTransactions)
                     console.log('vote transactions function',data);
 					// const openTransactions  = data.filter( rec => rec.Voting_Status === 'Open')
 					// console.log('vote transactions',openTransactions);
+                    localStorage.setItem('VotingPosition', data[0].Voting_Position);
                    setVoteTransactions(data);
                 //    calculateCountdown();
                 } else {
+                    localStorage.removeItem('VotingPosition');
                     console.log('No Records')
                 }
             } else {

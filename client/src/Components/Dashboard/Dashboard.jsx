@@ -60,13 +60,13 @@ const Dashboard = () => {
         return () => clearInterval(intervalId);
       }, []); 
     
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentPositionIndex(prevIndex => (prevIndex + 1) % positions.length);
-        }, 7000); // Change the interval time according to your preference (in milliseconds)
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         setCurrentPositionIndex(prevIndex => (prevIndex + 1) % positions.length);
+    //     }, 10000); // Change the interval time according to your preference (in milliseconds)
     
-        return () => clearInterval(interval);
-    }, [positions.length])
+    //     return () => clearInterval(interval);
+    // }, [positions.length])
     
   
     useEffect(() => {
@@ -85,6 +85,14 @@ const Dashboard = () => {
                     const matchingRecord = newRecord.find(record => record.id === candidate.id);
                     return matchingRecord ? { ...candidate, Vote_Count: matchingRecord.Vote_Count } : candidate;
                 });
+    /**new update to insert multi position on dashboard */
+                // Add new records from newRecord to candidates if there's a match based on ID and Candidate_Position
+newRecord.forEach(record => {
+    const exists = candidates.some(candidate => candidate.id === record.id && candidate.Candidate_Position === record.Candidate_Position);
+    if (!exists) {
+        updatedData.push(record);
+    }
+});
                 console.log('updatedData', updatedData);
                 // Update the candidates state
                 setCandidates(updatedData);
@@ -189,11 +197,22 @@ const Dashboard = () => {
             setVotedMembers(prev => {
                 // Check if newRecord's Voting_Status is 'Done'
                 if (newRecord.Voting_Status === 'Done') {
-                    // Add newRecord to the previous state
-                    return [...prev, newRecord];
+                    // Check if the id already exists in the previous state
+                    const existingRecordIndex = prev.findIndex(record => record.id === newRecord.id);
+            
+                    // If the id exists, update its status
+                    if (existingRecordIndex !== -1) {
+                        const updatedDoneVoters = [...prev];
+                        updatedDoneVoters[existingRecordIndex] = newRecord;
+                        return updatedDoneVoters;
+                    } else {
+                        // If the id doesn't exist, add newRecord to the previous state
+                        return [...prev, newRecord];
+                    }
                 } else {
-                    // If Voting_Status is not 'Done', return the previous state unchanged
-                    return prev;
+                    // If Voting_Status is not 'Done' and the record exists, remove it
+                    const filteredDoneVoters = prev.filter(record => record.id !== newRecord.id);
+                    return filteredDoneVoters;
                 }
             });
 
@@ -323,8 +342,6 @@ console.log('timeDifference', timeDifference)
     const handlePreviousPosition = () => {
         setCurrentPositionIndex(prevIndex => (prevIndex - 1 + positions.length) % positions.length);
     };
-
-  
 
     // console.log('membersInfo',membersInfo)
     const fetchMembersInfo = async () => {

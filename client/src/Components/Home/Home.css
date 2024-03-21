@@ -180,6 +180,17 @@ body{
     border-radius: 5px;
     /* background-color: red; */
   }
+  .re-voting-time-con{
+    margin-top: 5%;
+    background-color: rgb(239, 246, 251);
+    height: 40%;
+    width: 70%;
+    display: block;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    /* background-color: red; */
+  }
   .side-button{
     margin-top: 5%;
     background-color: #f14d4d;
@@ -223,7 +234,7 @@ body{
     align-items: center;
     justify-content: end;
   }
-  
+
   /** Add voting date*/
   .add-voting{
     margin-top: -10%;
@@ -266,6 +277,28 @@ body{
 .add-voting-start label,
 .add-voting-end label{
     font-size: 20px;
+}
+.voting-time-con-select{
+  margin: auto;
+  margin-top: -2%;
+  width: 80%;
+  height: 15%;
+}
+.voting-time-con-select label{
+  font-size: 19px;
+}
+.voting-time-con-select select{
+  outline: none;
+  font-size: 14px;
+  font-weight: 400;
+  color: #333;
+  border-radius: 5px;
+  /* border: 1px solid #aaa; */
+  height: 40px;
+  margin-left: 7%;
+  width: 38%;
+  cursor: pointer;
+  margin: 2% 1%;
 }
 
 /**Buttons*/
