@@ -16,7 +16,7 @@ import Dashboard from './Components/Dashboard/Dashboard';
 import WinningCandidates from './Components/WinningCandidates/WinningCandidates';
 
 function App() {
-	const assignedURL = 'https://evoting-system.azurewebsites.net';
+	const assignedURL = 'https://evoting.azurewebsites.net';
 	// const assignedURL = 'http://10.0.0.8:6061';
 	// const assignedURL = 'http://192.168.93.150:6061';
 	const [isLoggedIn, setisLoggedIn] = useState(false);
