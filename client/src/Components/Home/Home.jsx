@@ -18,7 +18,7 @@ import ExpandLessRoundedIcon from '@mui/icons-material/ExpandLessRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import { FaQuestion } from "react-icons/fa6";
-
+import BackspaceRoundedIcon from '@mui/icons-material/BackspaceRounded';
 const Home = () => {
     const { assignedURL, isLoggedIn, setisLoggedIn, usersName, setUsersName, setCandidates, candidates, groupedCandidates, membersInfo, setMembersInfo, VoteTransactions, setVoteTransactions,
 			setGroupedCandidates, maxCandidatesPerPositionState, setMaxCandidatesPerPositionState, highestVoteCount, setHighestVoteCount,  } = useContext(VotingContext);
@@ -36,6 +36,17 @@ const Home = () => {
 	const [isPostWinnersOpen, setIstPostWinnersOpen] = useState(false);
 	const [isPostVoteTransaction, setIsPostVoteTransaction]= useState(false);
 	const [isForReserved, setIsForReserved] = useState(false);
+	const [isUserSetUp, setIsUserSetUp] = useState(false);
+	const [isUploadImageOpen, setIsUploadImageOpen] = useState(false);
+	const [isSignatoryOpen, setIsSignatoryOpen] = useState(false);
+
+	const[isChangePass, setIsChangePass] = useState(false);
+
+	const [signatoryName, setSignatoryName] = useState('');
+	const [signatoryPosition, setSignatoryPosition] = useState('');
+
+	const [filteredMembers, setFilteredMembers] = useState([]);
+	const [findOTP, setFindOTP] = useState('');
 	// const [groupedCandidates, setGroupedCandidates] = useState([]);
 	// const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
 	// const [highestVoteCount, setHighestVoteCount]= useState([]);
@@ -72,6 +83,11 @@ const Home = () => {
 	/**members */ 
 	const [doneVoters, setDoneVoters] = useState([]);
 
+	/**Change password */
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [error, setError] = useState('');
 	const [fileUploaded, setFileUploaded] = useState('');
     const nav = useNavigate();
 
@@ -86,6 +102,9 @@ const Home = () => {
         }
 	
 		if(VoteTransactions.length > 0){
+			const voteTrans = VoteTransactions[0].Voting_Position;
+			setEditVotingPos(voteTrans);
+
 			const dateStart = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
 			const sd = convertDateFormat(dateStart)
 			setEditStartDate(sd);
@@ -99,7 +118,7 @@ const Home = () => {
 			const st = convertTo12HourFormat(timeStart)
 			setEditStartTime(timeStart);
 
-			console.log('timeStart',timeStart, st)
+
 			const timeEnd = VoteTransactions[0].Voting_End_Time;
 			const et = convertTo12HourFormat(timeEnd)
 			setEditEndTime(timeEnd);	
@@ -132,7 +151,7 @@ const Home = () => {
 			const st = convertTo12HourFormat(timeStart)
 			setEditStartTime(timeStart);
 
-			console.log('timeStart',timeStart, st)
+
 			const timeEnd = VoteTransactions[0].Voting_End_Time;
 			const et = convertTo12HourFormat(timeEnd)
 			setEditEndTime(timeEnd);	
@@ -143,22 +162,27 @@ const Home = () => {
         setActiveTab(tabIndex);
     };
 
+	useEffect(() => {
+        // Filter members based on the entered OTP whenever findOTP changes
+        const filtered = membersInfo.filter(member => {
+            // Convert OTP to string for case-insensitive search
+            const otpString = findOTP.toString().toLowerCase();
+            return member.OTP_Code.toLowerCase().includes(otpString);
+        });
+        setFilteredMembers(filtered);
+    }, [findOTP, membersInfo]); // Re
+
     useEffect(()=>{
 
         const socket = io(`${assignedURL}`);
         socket.on('OpenVotingTransactions',(newRecord) =>{
-            console.log('newRecord',newRecord)
             if(newRecord.length >0){
                 const voteStatus = newRecord.filter(rec => rec.Voting_Status === 'Open');
                 setVoteTransactions(voteStatus)
-                console.log('newRecord',newRecord)
-                // console.log('voteStatus',voteStatus)
-                console.log('voteStatus',voteStatus)
             }
          
         });
         socket.on('CloseVotingTransactions',(newRecord) =>{
-			console.log('CloseVotingTransactions', newRecord)
             setVoteTransactions([])
 			setEditEndDate('');
 			setEditEndTime('');
@@ -166,7 +190,6 @@ const Home = () => {
 			setEditStartTime('');
         });
 		socket.on('UpdatedMemberRecord', (newRecord) => {
-            console.log('UpdatedMemberRecord', newRecord)
             setMembersInfo(prevData =>
                 prevData.map(record =>
                     record.id === newRecord.id &&  record.Member_Id === newRecord.Member_Id ? { ...newRecord } : record
@@ -194,6 +217,25 @@ const Home = () => {
 				}
 			});
         });
+		
+		socket.on('UpdatedVoteCount', (UpdatedVoteCount) => {
+			const { newRecord } = UpdatedVoteCount;
+
+			// Update the vote count for the candidate with the matching ID
+			const updatedData = candidates.map(candidate => {
+				const matchingRecord = newRecord.find(record => record.id === candidate.id);
+				return matchingRecord ? { ...candidate, Vote_Count: matchingRecord.Vote_Count } : candidate;
+			});
+			// Update the candidates state
+			setCandidates(updatedData);
+
+		});
+
+		socket.on('updateMembersInfo', (updatedMembers) => {
+			setMembersInfo(updatedMembers);
+		});
+
+			
         return () => {
             socket.disconnect();
         };
@@ -212,7 +254,7 @@ const Home = () => {
 
         return groupedCandidates;
     };
-	console.log(maxCandidatesPerPositionState)
+
 	/**Fetch */
 /**reusable function to get highest / winners  */
 
@@ -237,7 +279,6 @@ const Home = () => {
 			...candidate,
 			Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
 		}));
-		console.log('newRecordWithTotalVotes', newRecordWithTotalVotes)
 		// Group the updated candidates by position
 		const list = CandidatesList(newRecordWithTotalVotes);
 		setGroupedCandidates(list);
@@ -275,10 +316,6 @@ const Home = () => {
 			topVoteCountsPerPosition[position] = topVoteCounts;
 		});
 
-
-
-
-		console.log('topVoteCountsPerPosition', topVoteCountsPerPosition, maxCandidatePerPositionState);
 		// Now, filter the candidates based on the top Vote_Count values
 		const candidatesInTopRanking = [];
 		data.forEach(candidate => {
@@ -292,13 +329,7 @@ const Home = () => {
 		});
 
 		// Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-		console.log('candidatesInTopRanking', candidatesInTopRanking);
 		const highestlist = CandidatesList(candidatesInTopRanking);
-
-		console.log('11111', candidatesInTopRanking);
-		console.log('11112', maxCandidatePerPositionState)
-		console.log('11113', topVoteCountsPerPosition);
-
 
 		/**Filter the Highest vote counts and return only exactly the maximum count per position based on Vote_Count */
 		const storage = {};
@@ -339,7 +370,6 @@ const Home = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('get_candidates_max_count',data);
                     setMaxCandidatesPerPositionState(data)
                 } else {
                     console.log('No Records')
@@ -358,7 +388,6 @@ const Home = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('sadadasdasda',data);
                  
                     setCandidates(data)
 
@@ -387,9 +416,7 @@ const Home = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('vote transactions function',data);
-					// const openTransactions  = data.filter( rec => rec.Voting_Status === 'Open')
-					// console.log('vote transactions',openTransactions);
+              
                    setVoteTransactions(data);
 
 					const dateStart = new Date(data[0].Voting_Start_Date).toLocaleDateString();
@@ -405,7 +432,6 @@ const Home = () => {
 					const st = convertTo12HourFormat(timeStart)
 					setEditStartTime(timeStart);
 		
-					console.log('timeStart',timeStart, st)
 					const timeEnd = data[0].Voting_End_Time;
 					const et = convertTo12HourFormat(timeEnd)
 					setEditEndTime(timeEnd);	
@@ -440,7 +466,6 @@ const Home = () => {
 			const contents = e.target.result;
 			parseFile(file.name, contents);
 		};
-		// console.log('extension', fn);
 		if (file) {
 			if (fn === 'csv') {
 				reader.readAsText(file);
@@ -452,15 +477,12 @@ const Home = () => {
 	};
 
 	const parseFile = (filename, fileContents) => {
-		// console.log('Parsing file:', filename);
 
 		const extension = filename.split('.').pop().toLowerCase();
 
 		if (extension === 'csv') {
-			// console.log('Parsing CSV file');
 			parseCSV(fileContents);
 		} else if (extension === 'xlsx' || extension === 'xls') {
-			// console.log('Parsing XLSX file');
 			parseXLSX(fileContents);
 		} else {
 			console.error('Unsupported file format');
@@ -472,7 +494,6 @@ const Home = () => {
 			header: true,
 			complete: (results) => {
 				setUploadedCsvFile(results.data);
-				console.log('CSV parsing complete', results.data);
 			},
 		});
 	};
@@ -504,7 +525,6 @@ const Home = () => {
 			}
 	
 			const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-			// console.log('Parsed JSON data:', jsonData);
 			const originalHeaders = jsonData[0]; // Assuming the headers are in the first row
 	
 			if (!originalHeaders) {
@@ -526,7 +546,6 @@ const Home = () => {
 				console.warn('Multiple sheets found in the workbook. Parsing only the first sheet.');
 			}
 	
-			// console.log('transformedData:', transformedData);
 			if(fileUploaded === 'Candidates'){
 				handleInsertCandidates(transformedData);
 			}else if(fileUploaded === 'Members'){
@@ -553,7 +572,6 @@ const Home = () => {
 
 	/**Function handling upload of Candidates */
 	const handleInsertCandidates = async (parsedData) => {
-        // console.log('parsedData', parsedData)
 			try {
 				const response = await fetch(`${assignedURL}/upload_candidate_info`, {
 					method: 'POST',
@@ -569,7 +587,6 @@ const Home = () => {
 					if (imageInput) {
 						imageInput.value = '';
 					}
-                    console.log('success parsedData', parsedData)
 					alert('Candidates successfully uploaded...')
 					setFileUploaded('');
 					
@@ -585,7 +602,6 @@ const Home = () => {
 
 	/**Function handling upload of Members */
 	const handleInsertMembers = async (parsedData) => {
-        console.log('Members', parsedData)
 		const existingOTPCodes = new Set(); // Set to store existing OTP codes
 
 			// Generate OTP codes for each member
@@ -594,7 +610,6 @@ const Home = () => {
 			existingOTPCodes.add(otp); // Add generated OTP code to the set
 			return { ...member, OTP_Code: otp };
 			});
-		  console.log('Members', updatedData)
 			try {
 				const response = await fetch(`${assignedURL}/upload_members_info`, {
 					method: 'POST',
@@ -610,7 +625,6 @@ const Home = () => {
 					if (imageInput) {
 						imageInput.value = '';
 					}
-                    console.log('success parsedData', updatedData)
 					alert('Members successfully uploaded...');
 					setFileUploaded('');
 					
@@ -634,7 +648,6 @@ const Home = () => {
 
 	/**Function handling upload of Candidates */
 	const handleInsertCandidatesMaxCount = async (parsedData) => {
-		// console.log('parsedData', parsedData)
 		try {
 			const response = await fetch(`${assignedURL}/upload_candidate_count`, {
 				method: 'POST',
@@ -687,7 +700,6 @@ const Home = () => {
 				EndTime: EndTime,
 				VotingPosition: selectedOpenPosition
 			}
-			console.log('newVote',newVoteTransaction)
 			try {
 				const response = await fetch(`${assignedURL}/create_new_voting_date`, {
 					method: 'POST',
@@ -785,6 +797,7 @@ const Home = () => {
             if (response.ok) {
 				setIsForceClose(false);
 				setNotificationMSG('');
+				setEditVotingPos('');
 				localStorage.removeItem('VotingPosition');
 				alert('Voting Transaction successfully closed...');
                 // setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
@@ -803,6 +816,10 @@ const Home = () => {
 		setIsUpdateMember(false);	
 		setIstPostWinnersOpen(false);
 		setIsForReserved(false);
+		setIsUserSetupOpen(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
 	}
 
 	/**update voting */
@@ -813,6 +830,9 @@ const Home = () => {
 		setIsUpdateMember(false)
 		setIstPostWinnersOpen(false);
 		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
 	}
 
 	/**Update Member  */
@@ -823,6 +843,9 @@ const Home = () => {
 		setIsUpdateMember(true);
 		setIstPostWinnersOpen(false);
 		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
 	}
 
 	/** handle user setup */
@@ -833,6 +856,9 @@ const Home = () => {
 		setIsUpdateMember(false);
 		setIstPostWinnersOpen(false);
 		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
 	}
 
 	/** handle user setup */
@@ -843,8 +869,24 @@ const Home = () => {
 		setIsUpdateMember(false);
 		setIstPostWinnersOpen(true);
 		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
 	}
 
+	
+	/** handle Signatory */
+	const handleSignatory = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(true);
+	}
 	const handleReRun = () =>{
 		setIsVotingDateUpdate(false);
 		setIsVotingDateOpen(false);
@@ -852,17 +894,43 @@ const Home = () => {
 		setIsUpdateMember(false);
 		setIstPostWinnersOpen(false);
 		setIsForReserved(true);
+		setIsChangePass(false);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
+	}
+	const handleUserChangePassword = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
+		setIsChangePass(true);
+		setIsUploadImageOpen(false);
+		setIsSignatoryOpen(false);
+	}
+
+	/**Handle Upload image module open */
+	const handleUploadImage = () =>{
+		setIsVotingDateUpdate(false);
+		setIsVotingDateOpen(false);
+		setIsUserSetupOpen(false);
+		setIsUpdateMember(false);
+		setIstPostWinnersOpen(false);
+		setIsForReserved(false);
+		setIsChangePass(false);
+		setIsUploadImageOpen(true);
+		setIsSignatoryOpen(false);
+
 	}
 	/**Function to generate invitation */
 	const handleGeneratePDF = () =>{
-		if(membersInfo.length > 0 && VoteTransactions.length > 0){
+		if(membersInfo.length > 0){
 			const formattedStartDate = new Date(VoteTransactions[0].Voting_Start_Date).toLocaleDateString();
 			const formattedEndDate = new Date(VoteTransactions[0].Voting_End_Date).toLocaleDateString();
 
 			const formattedStartTime = convertTo12HourFormat(VoteTransactions[0].Voting_Start_Time);
 			const formattedEndTime = convertTo12HourFormat(VoteTransactions[0].Voting_End_Time);
-
-			console.log('asdadasdas' , membersInfo, VoteTransactions, formattedStartTime, formattedEndTime, formattedStartDate, formattedEndDate)
 			generatePDF(membersInfo, formattedStartDate, formattedEndDate, formattedStartTime, formattedEndTime);
 		}else{
 			alert('No Members available or no voting transaction is opened...')
@@ -960,57 +1028,7 @@ MC Election Committee
 	
 		return `${year}-${month}-${day}`;
 	}
-	/**Function handling generate Excel for members information */
-	const handleGenerateExcel = () => {
-
-		if (membersInfo.length <= 0 && VoteTransactions.length <= 0) {
-			Alert(`No member's info found...`);
-		} else {
-			const headerRow = {
-				Member_Id: 'Member ID',
-				Member_Name: 'Member Name',
-				OTP_Code: 'OTP Code',
-			
-			};
-
-			const cleanedData = [headerRow, ...membersInfo.map((record) => {
-				// Create a new object with only text properties corresponding to the second set of headers
-				const textOnlyRecord = {
-					Member_Id: record.Member_Id,
-					Member_Name: record.Member_Name,
-					OTP_Code: record.OTP_Code,
-					
-				};
-				return textOnlyRecord;
-			})];
-
-			downloadCSV(cleanedData, 'Members_Information.csv');
-		}
-		// setIsDownloading(true);
-
-	};
-	/**Function handling Download Excel */
-	const downloadCSV = (data, filename) => {
-		console.log('data', data);
-		const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + data.map(row => {
-			// const employeeHeader = (row.Header.includes(',') || row.Employee_Name.includes(',')) ? `"${row.Header}"` : row.Header;
-
-			const rowValuesH = Object.keys(row)
-			  .map(key => (key === 'Header' || key === 'Member_Id' ? `"${row[key]}"` : row[key]))
-			  .join(',');
-			  console.log('rowValuesH', rowValuesH)
-		  return rowValuesH;
-		}).join('\n');
-	  
-		const encodedUri = encodeURI(csvContent);
-		const link = document.createElement('a');
-		link.setAttribute('href', encodedUri);
-		link.setAttribute('download', filename);
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-	  };
-	  
+	
 	  /**create user */
 	  const handleUserRegistration = async (e) => {
 		e.preventDefault();
@@ -1111,17 +1129,14 @@ MC Election Committee
 	const handlePostTransaction = () =>{
 		const records = HighestVoteCount(candidates, maxCandidatesPerPositionState);
 		let UpdatedCandidates = [];
-		console.log('records222',records, EditVotingPos)
+
 		if(EditVotingPos === 'ALL' ){
 			UpdatedCandidates = Object.values(records).flat();
-			console.log('records',records)
 		}else{
 			const filteredRecord = records[EditVotingPos];
-			console.log('filteredRecord',filteredRecord)
 			UpdatedCandidates = Object.values(filteredRecord).flat();
 		}
 		
-		console.log('UpdatedCandidates',UpdatedCandidates)
 		if(UpdatedCandidates.length <= 0){
 			alert('No transaction to be posted ...');
 			return
@@ -1142,13 +1157,12 @@ MC Election Committee
 	
 		const records = HighestVoteCount(candidates, maxCandidatesPerPositionState);
 		let UpdatedCandidates = [];
-		console.log('records222',records, EditVotingPos)
+
 		if(EditVotingPos === 'ALL' ){
 			UpdatedCandidates = Object.values(records).flat();
-			console.log('records',records)
+			
 		}else{
 			const filteredRecord = records[EditVotingPos];
-			console.log('filteredRecord',filteredRecord)
 			UpdatedCandidates = Object.values(filteredRecord).flat();
 		}
 	
@@ -1173,6 +1187,7 @@ MC Election Committee
 				setEditStartDate('');
 				setEditEndDate('');
 				setIsPostVoteTransaction(false);
+				sessionStorage.removeItem('updatedCandidates');
 				// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
 			} else {
 				if (response.status === 400) {
@@ -1260,6 +1275,448 @@ MC Election Committee
 		}
 	
 	}
+
+	/**function to reset Candidate vote count and status, 
+	 * remove the losers candidate, 
+	 * Delete vote records*/
+
+	const handleResetCandidates = async() =>{
+	    // Display a confirmation dialog before resetting
+		const confirmReset = window.confirm("Are you sure you want to reset vote records and candidate details?");
+
+		// Proceed with reset if user confirms
+		if (confirmReset) {
+			handleGenerateExcelVoteRecords();
+			handleGenerateExcelVoteResults();
+			try {
+				const response = await fetch(`${assignedURL}/reset_vote_transaction`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(),
+				});
+	
+				if (response.ok) {
+					alert(`Vote records and candidate details successfully reset...`);
+					sessionStorage.removeItem('updatedCandidates');
+					// setCandidates(prevCandidates => [...prevCandidates, ...updatedCandidatesWithVotersName]);
+				} else {
+					console.error('Error updating records:', response.statusText);
+				}
+			} catch (error) {
+				console.error('Error updating records:', error);
+			}
+		} else {
+			// Do nothing if user cancels the reset
+			console.log('Reset canceled by user.');
+		}
+	}
+
+	
+/**GEnerate Reports */
+	/**Function handling generate Excel for members information */
+	const handleGenerateExcel = () => {
+
+		if (membersInfo.length <= 0) {
+			alert(`No member's info found...`);
+		} else {
+			const headerRow = {
+				Member_Id: 'Member ID',
+				Member_Name: 'Member Name',
+				OTP_Code: 'OTP Code',
+			
+			};
+
+			const cleanedData = [headerRow, ...membersInfo.map((record) => {
+				// Create a new object with only text properties corresponding to the second set of headers
+				const textOnlyRecord = {
+					Member_Id: record.Member_Id,
+					Member_Name: record.Member_Name,
+					OTP_Code: record.OTP_Code,
+					
+				};
+				return textOnlyRecord;
+			})];
+
+			downloadCSV(cleanedData, 'Members_Information.csv');
+		}
+		// setIsDownloading(true);
+
+	};
+	/**Function handling Download Excel */
+	const downloadCSV = (data, filename) => {
+		const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + data.map(row => {
+			// const employeeHeader = (row.Header.includes(',') || row.Employee_Name.includes(',')) ? `"${row.Header}"` : row.Header;
+
+			const rowValuesH = Object.keys(row)
+			  .map(key => (key === 'Member_Id' || key === 'Member_Name' ? `"${row[key]}"` : row[key]))
+			  .join(',');
+
+		  return rowValuesH;
+		}).join('\n');
+	  
+		const encodedUri = encodeURI(csvContent);
+		const link = document.createElement('a');
+		link.setAttribute('href', encodedUri);
+		link.setAttribute('download', filename);
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	  };
+	const handleGenerateExcelVoteRecords = async() =>{
+		try {
+			const response = await fetch(`${assignedURL}/get_vote_records`);
+			if (response.ok) {
+				const data = await response.json();
+				if (data.length > 0) {
+			
+					const headerRow = {
+						Record_Id: 'Record Id',
+						Member_Id: 'Member ID',
+						Member_Name: 'Member Name',
+						Candidate_Name: 'Candidate Name',
+						Candidate_Position: 'Candidate Position',
+						Voting_Duration: "Voting Duration",
+						Vote_Count: "Vote Count"
+					
+					};
+
+
+					const cleanedData = [headerRow, ...data.map((record) => {
+						// Create a new object with only text properties corresponding to the second set of headers
+						const textOnlyRecord = {
+							Record_Id: record.id,
+							Member_Id: record.Voters_Id,
+							Member_Name:  record.Voters_Name, 
+							Candidate_Name:  record.Candidate_Name,
+							Candidate_Position: record.Candidate_Position,
+							Voting_Duration: record.Voting_Duration, 
+							Vote_Count: record.Vote_Count
+							
+						};
+						return textOnlyRecord;
+					})];
+		
+					downloadcsvVoteTransactios(cleanedData, 'Vote_Transaction_Records.csv');
+
+
+
+				} else {
+					alert('No Vote Transaction Record found...')
+				}
+			} else {
+				console.error('Error:', response.status);
+			}
+		} catch (error) {
+			console.error('Error:', error);
+		}
+	}
+	/**Function handling Download Excel */
+	const downloadcsvVoteTransactios = (data, filename) => {
+		const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + data.map(row => {
+			// const employeeHeader = (row.Header.includes(',') || row.Employee_Name.includes(',')) ? `"${row.Header}"` : row.Header;
+
+			const rowValuesH = Object.keys(row)
+			  .map(key => (key === 'Member_Id' || key === 'Member_Name' || key === 'Candidate_Name' ? `"${row[key]}"` : row[key]))
+			  .join(',');
+		  return rowValuesH;
+		}).join('\n');
+	  
+		const encodedUri = encodeURI(csvContent);
+		const link = document.createElement('a');
+		link.setAttribute('href', encodedUri);
+		link.setAttribute('download', filename);
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	  };
+
+	/**Funtion to generate Candidate Vote Result */
+	const handleGenerateExcelVoteResults = async() =>{
+		try {
+            const response = await fetch(`${assignedURL}/get_posted_vote_per_candidate`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+
+					// Step 1: Group records by Candidate_Position
+					let groupedRecords = data.reduce((acc, record) => {
+						const position = record.Candidate_Position;
+						acc[position] = acc[position] || [];
+						acc[position].push(record);
+						return acc;
+					}, {});
+
+					// Step 2: Sort each group by Vote_Count
+					for (let position in groupedRecords) {
+						groupedRecords[position] = groupedRecords[position].sort((a, b) => b.Vote_Count - a.Vote_Count);
+					}
+
+					// Step 3: Update the original records
+					let updatedRecords = Object.values(groupedRecords).flatMap(records => records);
+
+
+					const totalVotes = {};
+
+					// Iterate over the data to calculate the total votes for each position
+					updatedRecords.forEach(record => {
+						const position = record.Candidate_Position;
+						const voteCount = parseInt(record.Vote_Count);
+						
+						// If the position doesn't exist in the totalVotes object, create it with the current voteCount
+						if (!totalVotes[position]) {
+							totalVotes[position] = voteCount;
+						} else {
+							// Otherwise, add the current voteCount to the existing total
+							totalVotes[position] += voteCount;
+						}
+					});
+					
+					// Iterate over the data again to add the Total_Vote_Count property to each record
+					updatedRecords.forEach(record => {
+						const position = record.Candidate_Position;
+						record.Total_Vote_Count = totalVotes[position];
+					});
+					
+					/**Generate data for total votes */
+					const headerRow = {
+						Candidate_Name: 'Candidate Name',
+						Candidate_Position: 'Candidate Position',
+						Vote_Count: "Vote Count",
+						Total_Vote_Count: "Total Vote Count Per Position",
+						Vote_Percentage: "Vote Percentage",
+						Voting_Status: "Status"
+					
+					
+					};
+
+
+					const cleanedData = [headerRow, ...updatedRecords.map((record) => {
+						// Create a new object with only text properties corresponding to the second set of headers
+						const votePercent = ((record.Vote_Count / record.Total_Vote_Count) * 100).toFixed(2);
+
+						const textOnlyRecord = {
+							Candidate_Name: record.Candidate_Name,
+							Candidate_Position: record.Candidate_Position,
+							Vote_Count: record.Vote_Count,
+							Total_Vote_Count: record.Total_Vote_Count,
+							Vote_Percentage: isNaN(votePercent) ? '00.00 %' : `${votePercent} %`,
+							Voting_Status:  record.Voting_Status === 'Done' ? '' : record.Voting_Status
+							
+						};
+						return textOnlyRecord;
+					})];
+		
+					downloadcsvVoteFinalRecords(cleanedData, 'Final_Vote_Counts.csv');
+
+                } else {
+                    alert('No Records')
+                }
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+	}
+
+	/**Function handling Download Excel */
+	const downloadcsvVoteFinalRecords = (data, filename) => {
+		const csvContent = 'data:text/csv;charset=utf-8,' + '\uFEFF' + data.map(row => {
+			// const employeeHeader = (row.Header.includes(',') || row.Employee_Name.includes(',')) ? `"${row.Header}"` : row.Header;
+
+			const rowValuesH = Object.keys(row)
+				.map(key => (key === 'Member_Id' || key === 'Member_Name' || key === 'Candidate_Name' ? `"${row[key]}"` : row[key]))
+				.join(',');
+			return rowValuesH;
+		}).join('\n');
+
+		const encodedUri = encodeURI(csvContent);
+		const link = document.createElement('a');
+		link.setAttribute('href', encodedUri);
+		link.setAttribute('download', filename);
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+	
+	/**clear OTP search */
+	const handleClearFindOTP = () =>{
+		setFindOTP('');
+	}
+
+	const handlePasswordChange =async (e) => {
+        e.preventDefault();
+        // Check if new password and confirm new password match
+		if(username === '' ||  oldPassword === '' || newPassword === '' || confirmNewPassword === ''){
+			alert('Please complete the details before submitting...');
+			return
+		}
+        if (newPassword !== confirmNewPassword) {
+            alert('New password do not match');
+            return;
+        }
+		const data = {
+			username: username,
+			oldPassword: oldPassword,
+			newPassword: newPassword
+		};
+		try {
+			const response = await fetch(`${assignedURL}/change_password`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			});
+	
+			if (!response.ok) {
+				if (response.status === 400) {
+					// Display alert for specific error message from backend for 400 status code
+					const responseData = await response.json();
+					if (responseData.error) {
+						alert(responseData.error);
+					} else {
+						alert('User not found');
+					}
+				} else if (response.status === 401) {
+					// Display alert for specific error message from backend for 400 status code
+					const responseData = await response.json();
+					if (responseData.error) {
+						alert(responseData.error);
+					} else {
+						alert('User not found');
+					}
+				}else {
+					throw new Error('Failed to change password');
+				}
+			} else {
+				const responseData = await response.json();
+				setUsername('');
+				setOldPassword('');
+				setNewPassword('');
+				setConfirmNewPassword('');
+				setError('');
+				alert('Successfully changed password');
+
+			}
+		
+		} catch (error) {
+			console.error(error); // Handle error here
+		}
+       
+    };
+
+	
+
+
+	/**Upload images */
+
+	const [selectedFiles, setSelectedFiles] = useState([]);
+
+	const handleFileChangeUpload = (event) => {
+		setSelectedFiles([...selectedFiles, ...event.target.files]);
+	};
+	/**Upload images */
+	const handleSubmit = async (event) => {
+		event.preventDefault();
+
+		if (selectedFiles.length === 0) {
+			alert('Error: No image to be uploaded.');
+			return;
+		}
+		const formData = new FormData();
+		selectedFiles.forEach((file) => {
+			formData.append('images', file);
+		});
+
+
+		try {
+			const response = await fetch(`${assignedURL}/upload_images`, {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				const message = await response.text(); // Extract the message from the response
+				alert(message);
+
+				// Clear the file input field
+				const fileInput = document.querySelector('.file-input');
+				if (fileInput) {
+					fileInput.value = ''; // Reset the value to clear the selected files
+				}
+			} else {
+				console.error('Failed to upload images');
+			}
+		} catch (error) {
+			console.error('Error uploading images:', error);
+		}
+	};
+
+	/**Delete Images */
+	
+	/**function to reset Candidate vote count and status, 
+	 * remove the losers candidate, 
+	 * Delete vote records*/
+
+	const handleDeleteImages = async() =>{
+	    // Display a confirmation dialog before resetting
+		const confirmReset = window.confirm("Are you sure you want to reset vote records and candidate details?");
+
+		// Proceed with reset if user confirms
+		if (confirmReset) {
+			try {
+				const response = await fetch(`${assignedURL}/delete_images`, {
+				  method: 'DELETE',
+				  // Add any necessary headers or body data if required
+				});
+			
+				if (response.ok) {
+				  alert('All uploaded images deleted successfully');
+				} else {
+				  console.error('Failed to delete images:', response.status);
+				  alert('Failed to delete images. Please try again.');
+				}
+			  } catch (error) {
+				console.error('Error deleting images:', error);
+				alert('Error deleting images. Please try again.');
+			  }
+		} else {
+			// Do nothing if user cancels the reset
+			console.log('Reset canceled by user.');
+		}
+	}
+
+	/**Add Signatory */
+	const handleSubmitSignatory = async (event) => {
+		event.preventDefault();
+		const data = {
+			signatoryName: signatoryName,
+			signatoryPosition: signatoryPosition
+		};
+		// console.log('Signatory submitted successfully!',data);
+		try {
+			const response = await fetch(`${assignedURL}/insert_signatory`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			});
+			
+			if (response.ok) {
+				const data = await response.json();
+				alert(data.message);
+				setSignatoryName('');
+            	setSignatoryPosition('');
+			}
+		
+		} catch (error) {
+			console.error(error); // Handle error here
+		}
+	  };
     return (
         // <div className="Home_Con">
         //     <div className="nav-container">
@@ -1341,7 +1798,7 @@ MC Election Committee
 			<div className="sidebar">
 				{/* <button class="toggle-btn" onClick={toggleSidebar}>Toggle Sidebar</button> */}
 				<div className="sidebar-logo">
-					{/* <img src={exampleImage} alt="Example" className="home-logo" /> */}
+					<img src={exampleImage} alt="Example" className="home-logo" />
 				</div>
 				<div className="sidebar-line">&nbsp;</div>
 				<div className="sidebar-navigations">
@@ -1349,7 +1806,7 @@ MC Election Committee
 					<button onClick={handleNavigateToDashboard}>Dashboard</button>
 					<button onClick={handleNavigateToDashboardWinning}>Winning Candidates</button>
 
-					<div className="toggle-icon-con" onClick={() => setIstoggleUpload(!istoggleUploads)}><button >Upload Candidates</button><span>{!istoggleUploads &&<ExpandMoreRoundedIcon/>} {istoggleUploads && <ExpandLessRoundedIcon/>}</span></div>
+					<div className="toggle-icon-con" onClick={() => setIstoggleUpload(!istoggleUploads)}><button >Upload Masterfile</button><span>{!istoggleUploads &&<ExpandMoreRoundedIcon/>} {istoggleUploads && <ExpandLessRoundedIcon/>}</span></div>
 					{istoggleUploads && 
 					<>
 						<div className="upload-sub-menus">
@@ -1372,14 +1829,18 @@ MC Election Committee
 							<button  onClick={handleVotingUpdate}>Update Voting</button>
 							<button  onClick={handleReRun}>Set up Multi-run Position</button>
 							<button  onClick={handlePostWinners}>Post Winners</button>
+							<button  onClick={handleSignatory}>Set up Signatory</button>
 						</div>
 					</>}
 
-					<div className="toggle-icon-con" onClick={() => setIsMemberOpen(!isMemberOpen)}><button >Member Setup</button><span>{!isMemberOpen &&<ExpandMoreRoundedIcon/>} {isMemberOpen && <ExpandLessRoundedIcon/>}</span></div>
+					<div className="toggle-icon-con" onClick={() => setIsMemberOpen(!isMemberOpen)}><button >Member / Candidate Setup</button><span>{!isMemberOpen &&<ExpandMoreRoundedIcon/>} {isMemberOpen && <ExpandLessRoundedIcon/>}</span></div>
 					{isMemberOpen && 
 					<>
 						<div className="upload-sub-menus">
 							<button  onClick={handleUpdateMember}>Update Member</button>
+							<button  onClick={handleUploadImage}>Upload Images</button>
+							<button  onClick={handleDeleteImages}>Delete Images</button>
+							<button  onClick={handleResetCandidates}>Reset Records</button>
 						</div>
 					</>}
 
@@ -1387,12 +1848,21 @@ MC Election Committee
 					{isGenerateReport && 
 					<>
 						<div className="upload-sub-menus">
-							<button  onClick={handleGeneratePDF}>Generate Invitation</button>
-							<button  onClick={handleGenerateExcel}>Generate OTP Records</button>
+							<button  onClick={handleGeneratePDF}>Generate Invitation (PDF)</button>
+							<button  onClick={handleGenerateExcel}>Generate OTP Records (CSV)</button>
+							<button  onClick={handleGenerateExcelVoteRecords}>Generate Vote Records Per Member (CSV)</button>
+							<button  onClick={handleGenerateExcelVoteResults}>Generate Final Vote Results (CSV)</button>
 						</div>
 					</>}
-					<button onClick={handleUserSetup}>User Setup</button>
 
+						<div className="toggle-icon-con" onClick={() => setIsUserSetUp(!isUserSetUp)}><button >User Setup</button><span>{!isUserSetUp &&<ExpandMoreRoundedIcon/>} {isUserSetUp && <ExpandLessRoundedIcon/>}</span></div>	
+				{isUserSetUp && 
+					<>
+						<div className="upload-sub-menus">
+								<button onClick={handleUserSetup}>Add User</button>
+								<button onClick={handleUserChangePassword}>Change Password</button>
+						</div>
+					</>}
 
 				</div>
 				<div className="sidebar-logout">
@@ -1469,7 +1939,10 @@ MC Election Committee
 						</div> */}
 						<div className="voting-time-con">
 						<h2 style={{marginLeft: '15px'}}>Update Vote Transaction</h2>
+						<div style={{fontSize: '19px', textAlign:'center', fontWeight: '300'}}><label>Voting Position: {EditVotingPos}</label></div>
 							<div className="voting-time">
+							
+								
 								<div className="add-voting">
 									<div className="add-voting-start">
 										<div className="add-voting-start-input">
@@ -1509,7 +1982,11 @@ MC Election Committee
 						<div className="update-member-time-con">
 							<div className="update-member-time-con2">
 								<div className="update-member-time-con2-header">
-									<span>Voters Percent : {doneVoters.length} / {membersInfo.length}</span>
+									<div className="update-member-time-con2-header-div1"><span>Voters Percent : {doneVoters.length} / {membersInfo.length}</span></div>
+										<div className="update-member-time-con2-header-div2">
+											<input type="text" value={findOTP} onChange={(e)=>setFindOTP(e.target.value)} className="search-OTP" placeholder="OTP To Search"/>
+											<BackspaceRoundedIcon className="clear-icon" onClick={handleClearFindOTP}/>
+										</div>
 								</div>
 								<div className="update-member-time-con2-content" >
 									<table>
@@ -1523,8 +2000,8 @@ MC Election Committee
 											</tr>
 										</thead>
 										<tbody>
-											{membersInfo.length > 0 ? (
-												membersInfo.map((record, index) => (
+											{filteredMembers.length > 0 ? (
+												filteredMembers.map((record, index) => (
 													<tr key={index}>
 														<td>{record.Member_Id}</td>
 														<td>{record.Member_Name}</td>
@@ -1544,7 +2021,7 @@ MC Election Committee
 								</div>
 							</div>
 							<div className="voting-time-button2">
-								<button className="voting-time-button-add" onClick={handleResetAllMembers}>Reset</button>
+								<button className="voting-time-button-add" onClick={handleResetAllMembers}>Reset All</button>
 							</div>
 						</div>
 					</>
@@ -1578,6 +2055,38 @@ MC Election Committee
 								<button type="submit">Register</button>
 							</form>
 						</div>
+					</div>
+					)}
+					{isChangePass && (
+					<div className="register-container">
+						<div className="user-setup-container">
+								<h3>Change Password</h3>
+								{/* Change password form */}
+								<form onSubmit={handlePasswordChange}>
+									<div className="input-group">
+										<div className="input-field">
+											<label htmlFor="username">Username:</label>
+											<input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" />
+										</div>
+										<div className="input-field">
+											<label htmlFor="oldPassword">Old Password:</label>
+											<input type="password" id="oldPassword" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} autoComplete="off" />
+										</div>
+									</div>
+									<div className="input-group">
+										<div className="input-field">
+											<label htmlFor="newPassword">New Password:</label>
+											<input type="password" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="off" />
+										</div>
+										<div className="input-field">
+											<label htmlFor="confirmNewPassword">Confirm New Password:</label>
+											<input type="password" id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} autoComplete="off" />
+										</div>
+									</div>
+
+									<button type="submit">Change Password</button>
+								</form>
+							</div>
 					</div>
 					)}
 					{isPostWinnersOpen && 
@@ -1693,6 +2202,62 @@ MC Election Committee
 								<button className="voting-time-button-add" onClick={handleUpdateMultiRunPosition}>Update</button>
 								<button className="voting-time-button-stop" onClick={handleUpdateMultiRunPositionFalse}>Remove Multiple</button>
 							</div>
+						</div>
+					</>
+					}
+					{isUploadImageOpen && 
+					<>
+						
+						<div className="re-voting-time-con">
+					
+						<div className="upload-container">
+						<h2 style={{marginLeft: '15px'}}>Upload images</h2>
+							<form onSubmit={handleSubmit} className="upload-form">
+								<input type="file" accept="image/*" multiple onChange={handleFileChangeUpload} className="file-input" />
+								<button type="submit" className="upload-button">Upload</button>
+							</form>
+							</div>
+							
+						</div>
+					</>
+					}
+					{isSignatoryOpen && 
+					<>					
+						<div className="signatory-voting-time-con">
+							<div className="signatory-container-home">
+								<h2 style={{ marginLeft: '15px' }}>Signatory</h2>
+								<form onSubmit={handleSubmitSignatory} className="signatory-form">
+									<div>
+										<label htmlFor="name">Name:</label>
+										<input
+											type="text"
+											id="name"
+											value={signatoryName}
+											onChange={(e)=>setSignatoryName(e.target.value)}
+											required
+											autoComplete="off"
+										/>
+									</div>
+									<div>
+										<label htmlFor="position">Position:</label>
+										<select
+											id="position"
+											value={signatoryPosition}
+											onChange={(e)=>setSignatoryPosition(e.target.value)}
+											required
+										>
+											<option value="">Select Position</option>
+											<option value="BOD CHAIRPERSON">BOD CHAIRPERSON</option>
+											<option value="ELECTION COMMITTEE CHAIRPERSON">ELECTION COMMITTEE CHAIRPERSON</option>
+										</select>
+									</div>
+							
+									<button type="submit" className="signatory-button">
+										Update
+									</button>
+        </form>
+      </div>
+							
 						</div>
 					</>
 					}

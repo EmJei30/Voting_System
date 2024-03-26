@@ -6,6 +6,8 @@ import Papa from 'papaparse';
 import io from 'socket.io-client';
 import Marquee from 'react-fast-marquee';
 import moment from 'moment';
+
+
 /**Context */
 import { VotingContext } from '../../Context/Voting';
 /**icon */
@@ -22,6 +24,8 @@ const Dashboard = () => {
     // const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
     // const [highestVoteCount, setHighestVoteCount]= useState([]);
     const [showAlert, setShowAlert] = useState(false);
+
+    const [updatedCandidatesState, setUpdatedCandidatesState] = useState([]);
 
     const [isVotingOpen, setIsVotingOpen] = useState(false);
     const [dayTimer, setDayTimer]= useState('');
@@ -60,42 +64,33 @@ const Dashboard = () => {
         return () => clearInterval(intervalId);
       }, []); 
     
-    // useEffect(() => {
-    //     const interval = setInterval(() => {
-    //         setCurrentPositionIndex(prevIndex => (prevIndex + 1) % positions.length);
-    //     }, 10000); // Change the interval time according to your preference (in milliseconds)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentPositionIndex(prevIndex => (prevIndex + 1) % positions.length);
+        }, 10000); // Change the interval time according to your preference (in milliseconds)
     
-    //     return () => clearInterval(interval);
-    // }, [positions.length])
+        return () => clearInterval(interval);
+    }, [positions.length])
     
   
     useEffect(() => {
         const socket = io(`${assignedURL}`);
 
         socket.on('UpdatedVoteCount', (UpdatedVoteCount) => {
+            const updatedCandidateJSON = sessionStorage.getItem('updatedCandidates');
+            const updatedcandidate = updatedCandidateJSON ? JSON.parse(updatedCandidateJSON) : {}; 
 
             const {newRecord} = UpdatedVoteCount;
-                console.log('candidates12321', candidates);
-                console.log('groupedCandidates', groupedCandidates);
-                console.log('maximumCandidates', maxCandidatesPerPositionState);
-                console.log('newRecord', newRecord);
               
                 // Update the vote count for the candidate with the matching ID
-                const updatedData = candidates.map(candidate => {
+                const updatedData = updatedcandidate.map(candidate => {
                     const matchingRecord = newRecord.find(record => record.id === candidate.id);
                     return matchingRecord ? { ...candidate, Vote_Count: matchingRecord.Vote_Count } : candidate;
                 });
-    /**new update to insert multi position on dashboard */
-                // Add new records from newRecord to candidates if there's a match based on ID and Candidate_Position
-newRecord.forEach(record => {
-    const exists = candidates.some(candidate => candidate.id === record.id && candidate.Candidate_Position === record.Candidate_Position);
-    if (!exists) {
-        updatedData.push(record);
-    }
-});
-                console.log('updatedData', updatedData);
+
                 // Update the candidates state
                 setCandidates(updatedData);
+                sessionStorage.setItem('updatedCandidates', JSON.stringify(updatedData));
                 /**Get the total vote per position and add new property per position */
                 let totalVotesPerPosition = {};
 
@@ -117,18 +112,55 @@ newRecord.forEach(record => {
                     ...candidate,
                     Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
                 }));
-                console.log('newRecordWithTotalVotes',newRecordWithTotalVotes)
+               
                 // Group the updated candidates by position
                 const list = CandidatesList(newRecordWithTotalVotes);
+                // Iterate over each position in list
+                  // Iterate over each position in list
+                  Object.entries(list).forEach(([position, candidates]) => {
+                    // Sort candidates array in descending order based on the Vote property
+                    candidates.sort((a, b) => b.Vote_Count - a.Vote_Count);
+                
+                    let sequenceNumber = 1; // Initialize sequence number for each group
+                
+                    // Iterate over each candidate in the candidates array
+                    candidates.forEach(candidate => {
+                        // Add RankNumber as a new property to each candidate
+                        candidate.RankNumber = sequenceNumber;
+                        sequenceNumber++; // Increment sequence number for the next candidate
+                    });
+                });
+                    
                 const sortedCandidates = {};
 
-                        // Iterate over each position in groupedCandidates
-                        Object.entries(list).forEach(([position, candidates]) => {
-                            // Sort candidates array based on Vote_Count
-                            const sortedCandidatesArray = [...candidates].sort((a, b) => b.Vote_Count - a.Vote_Count);
-                            // Reverse the sorted array to arrange from highest to lowest Vote_Count
-                            sortedCandidates[position] = sortedCandidatesArray;
-                        });
+                // Iterate over each position in groupedCandidates
+                Object.entries(list).forEach(([position, candidates]) => {
+                    // Sort candidates array based on Vote_Count
+                    const sortedCandidatesArray = [...candidates].sort((a, b) => b.Vote_Count - a.Vote_Count);
+                
+                    let currentPage = 1; // Initialize current page number
+                    let startIndex = 0; // Initialize the start index of candidates for the current page
+                
+                    while (startIndex < sortedCandidatesArray.length) {
+                        // Create a new group name
+                        const currentGroupName = `${position} - Page ${currentPage}`;
+                
+                        // Determine the end index for the current page
+                        const endIndex = Math.min(startIndex + 10, sortedCandidatesArray.length);
+                
+                        // Slice the records accordingly
+                        const currentPageCandidates = sortedCandidatesArray.slice(startIndex, endIndex);
+                
+                        // Insert the current page candidates
+                        sortedCandidates[currentGroupName] = currentPageCandidates;
+                
+                        // Update the start index for the next page
+                        startIndex = endIndex;
+                
+                        // Increment current page number
+                        currentPage++;
+                    }
+                });
                 setGroupedCandidates(sortedCandidates);
             
              let candidatesWithMaxVotePerPosition = {}; // Object to store candidates with the highest vote count per position
@@ -164,9 +196,7 @@ newRecord.forEach(record => {
                 topVoteCountsPerPosition[position] = topVoteCounts;
             });
 
-
-
-            console.log('topVoteCountsPerPosition', topVoteCountsPerPosition);
+           
             // Now, filter the candidates based on the top Vote_Count values
             const candidatesInTopRanking = [];
             updatedData.forEach(candidate => {
@@ -180,15 +210,12 @@ newRecord.forEach(record => {
             });
 
             // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-            console.log('candidatesInTopRanking', candidatesInTopRanking);
+        
             const highestlist = CandidatesList(candidatesInTopRanking);
             setHighestVoteCount(highestlist);
-            
-        // fetchCandidates()
+
         });
-        socket.on('UpdatedMemberRecord', (newRecord) => {
-            console.log('UpdatedMemberRecord', newRecord)
-            
+        socket.on('UpdatedMemberRecord', (newRecord) => {            
             setMembersInfo(prevData =>
                 prevData.map(record =>
                     record.id === newRecord.id &&  record.Member_Id === newRecord.Member_Id ? { ...newRecord } : record
@@ -218,19 +245,96 @@ newRecord.forEach(record => {
 
         });
         socket.on('OpenVotingTransactions',(newRecord) =>{
-            console.log('newRecord',newRecord)
             if(newRecord.length >0){
                 const voteStatus = newRecord.filter(rec => rec.Voting_Status === 'Open');
                 setVoteTransactions(voteStatus)
-                console.log('newRecord',newRecord)
-                // console.log('voteStatus',voteStatus)
-                console.log('voteStatus',voteStatus)
             }
-         
         });
         socket.on('CloseVotingTransactions',(newRecord) =>{
             setVoteTransactions([])
 
+        });
+        socket.on('AdditionalCandidates', (newRecord) => {
+            fetchCandidates();
+        });
+        socket.on('UpdatedCandidate',(newRecord) =>{
+            setCandidates(newRecord)
+            sessionStorage.setItem('updatedCandidates', JSON.stringify(newRecord));
+            let totalVotesPerPosition = {};
+
+            newRecord.forEach(candidate => {
+                if (candidate.Vote_Count > 0) {
+                    // Check if the position already exists in the totalVotesPerPosition object
+                    if (!totalVotesPerPosition[candidate.Candidate_Position]) {
+                        // If it doesn't exist, initialize the total votes for that position
+                        totalVotesPerPosition[candidate.Candidate_Position] = candidate.Vote_Count;
+                    } else {
+                        // If it exists, add the candidate's vote count to the existing total votes for that position
+                        totalVotesPerPosition[candidate.Candidate_Position] += candidate.Vote_Count;
+                    }
+                }
+            });
+            
+            // Iterate over the newRecord array to add the Total_Votes property
+            const newRecordWithTotalVotes = newRecord.map(candidate => ({
+                ...candidate,
+                Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
+            }));
+            // Group the updated candidates by position
+            const list = CandidatesList(newRecordWithTotalVotes);
+           // Iterate over each position in list
+            // Iterate over each position in list
+            Object.entries(list).forEach(([position, candidates]) => {
+                // Sort candidates array in descending order based on the Vote property
+                candidates.sort((a, b) => b.Vote_Count - a.Vote_Count);
+            
+                let sequenceNumber = 1; // Initialize sequence number for each group
+            
+                // Iterate over each candidate in the candidates array
+                candidates.forEach(candidate => {
+                    // Add RankNumber as a new property to each candidate
+                    candidate.RankNumber = sequenceNumber;
+                    sequenceNumber++; // Increment sequence number for the next candidate
+                });
+            });
+
+
+            
+            const sortedCandidates = {};
+
+            // Iterate over each position in groupedCandidates
+            Object.entries(list).forEach(([position, candidates]) => {
+                // Sort candidates array based on Vote_Count
+                const sortedCandidatesArray = [...candidates].sort((a, b) => b.Vote_Count - a.Vote_Count);
+            
+                let currentPage = 1; // Initialize current page number
+                let startIndex = 0; // Initialize the start index of candidates for the current page
+            
+                while (startIndex < sortedCandidatesArray.length) {
+                    // Create a new group name
+                    const currentGroupName = `${position} - Page ${currentPage}`;
+            
+                    // Determine the end index for the current page
+                    const endIndex = Math.min(startIndex + 10, sortedCandidatesArray.length);
+            
+                    // Slice the records accordingly
+                    const currentPageCandidates = sortedCandidatesArray.slice(startIndex, endIndex);
+            
+                    // Insert the current page candidates
+                    sortedCandidates[currentGroupName] = currentPageCandidates;
+            
+                    // Update the start index for the next page
+                    startIndex = endIndex;
+            
+                    // Increment current page number
+                    currentPage++;
+                }
+            });
+        setGroupedCandidates(sortedCandidates);
+        });
+        socket.on('UpdateRefreshCandidates',(newRecord) =>{
+            console.log('UpdateRefreshCandidates',newRecord)
+            fetchCandidates();
         });
         return () => {
             socket.disconnect();
@@ -259,14 +363,8 @@ newRecord.forEach(record => {
     
             const currentTime = moment();
             
-            // console.log('End Time:', endTime);
-            // console.log('startTime:', startTime);
-            console.log('Current Time:', currentTime);
-    
             let timeDifference;
             let countdownMessage;
-            // console.log('End Date String:', `${VoteTransactions[0].Voting_End_Date}T${VoteTransactions[0].Voting_End_Time}`);
-            // console.log('Current Date String:', currentTime.format());
             
             if (currentTime < startTime) {
                 timeDifference = startTime.diff(currentTime, 'seconds');
@@ -276,7 +374,7 @@ newRecord.forEach(record => {
                 timeDifference = endTime.diff(currentTime, 'seconds');
                 countdownMessage = "Voting ends in:";
                 setIsVotingOpen(true);
-console.log('timeDifference', timeDifference)
+
                 if (timeDifference <= 0) {
                     setIsVotingOpen(false);
                     countdownMessage = "Voting has ended";
@@ -284,13 +382,11 @@ console.log('timeDifference', timeDifference)
                         updateVoteTransaction();
                     }
                  
-                    // console.log("Voting has ended.");
                     return;
                 }
             }
     
        
-            // console.log('timeDifference', timeDifference);
             const duration = moment.duration(timeDifference, 'seconds');
             const days = duration.days().toString().padStart(2, '0'); // Ensure two digits with leading zeros
             const hours = duration.hours().toString().padStart(2, '0'); // Ensure two digits with leading zeros
@@ -298,7 +394,6 @@ console.log('timeDifference', timeDifference)
             const seconds = duration.seconds().toString().padStart(2, '0'); // Ensure two digits with leading zeros
             
            const countDown = (countdownMessage);
-        //    console.log('countDown',countDown)
            setDayTimer(days);
            setHourTimer(hours);
            setMinTimer(minutes);
@@ -343,7 +438,6 @@ console.log('timeDifference', timeDifference)
         setCurrentPositionIndex(prevIndex => (prevIndex - 1 + positions.length) % positions.length);
     };
 
-    // console.log('membersInfo',membersInfo)
     const fetchMembersInfo = async () => {
 		try {
 			const response = await fetch(`${assignedURL}/get_members_info`);
@@ -372,10 +466,9 @@ console.log('timeDifference', timeDifference)
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log(data);
                  
                     setCandidates(data)
-
+                    sessionStorage.setItem('updatedCandidates', JSON.stringify(data));
                     let totalVotesPerPosition = {};
 
                     data.forEach(candidate => {
@@ -397,33 +490,59 @@ console.log('timeDifference', timeDifference)
                         Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
                     }));
                 
-                    console.log('data', newRecordWithTotalVotes);
                     const list = CandidatesList(newRecordWithTotalVotes);
-                    console.log('grouped1111', list);
-                    // Create a new object to store sorted candidates
-                        const sortedCandidates = {};
-
-                        // Iterate over each position in groupedCandidates
-                        Object.entries(list).forEach(([position, candidates]) => {
-                            // Sort candidates array based on Vote_Count
-                            const sortedCandidatesArray = [...candidates].sort((a, b) => b.Vote_Count - a.Vote_Count);
-                            // Reverse the sorted array to arrange from highest to lowest Vote_Count
-                            sortedCandidates[position] = sortedCandidatesArray;
+                    // Iterate over each position in list
+                    Object.entries(list).forEach(([position, candidates]) => {
+                        // Sort candidates array in descending order based on the Vote property
+                        candidates.sort((a, b) => b.Vote_Count - a.Vote_Count);
+                    
+                        let sequenceNumber = 1; // Initialize sequence number for each group
+                    
+                        // Iterate over each candidate in the candidates array
+                        candidates.forEach(candidate => {
+                            // Add RankNumber as a new property to each candidate
+                            candidate.RankNumber = sequenceNumber;
+                            sequenceNumber++; // Increment sequence number for the next candidate
                         });
-                        console.log('grouped', sortedCandidates);
-                    setGroupedCandidates(sortedCandidates);
-                    // Find the entry with the highest Vote_Count
-                    // let maxVoteCount = 0;
-                    // let candidatesWithMaxVoteCount = [];
+                    });
 
-                    // data.forEach(candidate => {
-                    //     if (candidate.Vote_Count > maxVoteCount) {
-                    //         maxVoteCount = candidate.Vote_Count;
-                    //         candidatesWithMaxVoteCount = [candidate];
-                    //     } else if (candidate.Vote_Count === maxVoteCount) {
-                    //         candidatesWithMaxVoteCount.push(candidate);
-                    //     }
-                    // });
+
+                    const sortedCandidates = {};
+
+                    // Iterate over each position in groupedCandidates
+                    Object.entries(list).forEach(([position, candidates]) => {
+                        // Sort candidates array based on Vote_Count
+                        const sortedCandidatesArray = [...candidates].sort((a, b) => b.Vote_Count - a.Vote_Count);
+                    
+                        let currentPage = 1; // Initialize current page number
+                        let startIndex = 0; // Initialize the start index of candidates for the current page
+                    
+                        while (startIndex < sortedCandidatesArray.length) {
+                            // Create a new group name
+                            const currentGroupName = `${position} - Page ${currentPage}`;
+                    
+                            // Determine the end index for the current page
+                            const endIndex = Math.min(startIndex + 10, sortedCandidatesArray.length);
+                    
+                            // Slice the records accordingly
+                            const currentPageCandidates = sortedCandidatesArray.slice(startIndex, endIndex);
+                    
+                            // Insert the current page candidates
+                            sortedCandidates[currentGroupName] = currentPageCandidates;
+                    
+                            // Update the start index for the next page
+                            startIndex = endIndex;
+                    
+                            // Increment current page number
+                            currentPage++;
+                        }
+                    });
+                    
+                    
+                    
+                    
+                    setGroupedCandidates(sortedCandidates);
+                   
                     let candidatesWithMaxVotePerPosition = {}; // Object to store candidates with the highest vote count per position
 
                     const maxCandidatePerPositionState = maxCandidatesPerPositionState;
@@ -433,7 +552,6 @@ console.log('timeDifference', timeDifference)
                         candidatesWithMaxVotePerPosition[position.Candidate_Position] = [];
                     });
                     
-                    // console.log('candidatesWithMaxVotePerPosition2',candidatesWithMaxVotePerPosition)
                     // Find the maximum vote count for each position
                     const topVoteCountsPerPosition = {};
                     Object.values(maxCandidatePerPositionState).forEach(positionData => {
@@ -460,8 +578,7 @@ console.log('timeDifference', timeDifference)
                     });
                     
                     
-                    
-                    console.log('topVoteCountsPerPosition', topVoteCountsPerPosition);
+                
                     // Now, filter the candidates based on the top Vote_Count values
                     const candidatesInTopRanking = [];
                     data.forEach(candidate => {
@@ -475,9 +592,6 @@ console.log('timeDifference', timeDifference)
                     });
 
                     // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-                    console.log('1111',candidatesInTopRanking);
-                    console.log('1111',maxCandidatePerPositionState)
-                    console.log('1111', topVoteCountsPerPosition);
                     const highestlist = CandidatesList(candidatesInTopRanking);
                     setHighestVoteCount(highestlist);
                     
@@ -499,7 +613,6 @@ console.log('timeDifference', timeDifference)
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('get_candidates_max_count',data);
                     setMaxCandidatesPerPositionState(data)
                 } else {
                     console.log('No Records')
@@ -540,15 +653,10 @@ console.log('timeDifference', timeDifference)
     const handleBack = () =>{
         nav('/admin-maintenance')
     }
-    // const handleScroll = () =>{
-    //     const divToScroll = document.getElementById("dashboard-display");
-	// 	if (divToScroll) {
-	// 		divToScroll.scroll({top:500,behavior:'smooth'})		
-	// 	}
-    // }
-    // console.log('currentPosition',currentPosition)
-    // console.log('currentPositionIndex',currentPositionIndex)
-    // console.log('groupedCandidates',groupedCandidates)
+
+   const handlePrint = () => {
+        window.print(); // Trigger the browser's print functionality
+      };
     return (
         <div className="Dashboard-Home_Con">
             {showAlert && (
@@ -567,7 +675,7 @@ console.log('timeDifference', timeDifference)
                     {/* <span> {countDown} {dayTimer} D {hourTimer} H {minTimer} M {secTimer} S</span> */}
                     <div className="Dashboard-countdown-timer-con">
                             <div className="Dashboard-countdown-back"><ExitToAppRoundedIcon onClick={handleBack} fontSize="large" className="return-icon"/></div>
-                            <div className="Dashboard-countdown-present"><span>Voter's Percent : {votedMembers.length} / {membersInfo.length}</span></div>
+                            <div className="Dashboard-countdown-present"><span>Voter's Percent : {votedMembers.length} / {membersInfo.length}</span> </div>
                             <div className="Dashboard-countdown-msg" style={{color: !isVotingOpen && 'red'}}> {VoteTransactions.length > 0 ? countDown : 'Voting is Closed...'}</div>
                             <div className="Dashboard-countdown-count-con">
                                 <div className="Dashboard-countdown-timer">
@@ -595,9 +703,11 @@ console.log('timeDifference', timeDifference)
                                     <span className="Dashboard-countdown-timer-text">Seconds</span>
                                     </>}
                                 </div>
-                            
+                               
                             </div>
-                        
+                                {VoteTransactions.length <= 0 && <>
+                                    <div className = "position-title-con-print-button"><button onClick={handlePrint}><span>Print</span></button></div>
+                                </>}
                     </div>
                 </div>
             
@@ -625,21 +735,26 @@ console.log('timeDifference', timeDifference)
                         {Object.entries(groupedCandidates).map(([position, candidates]) => (
                             <div key={`${position}-list`} className="Dashboard-position-container" style={{ display: position === currentPosition ? 'block' : 'none' }}>
                                 {/* <h3 className="position-title">&nbsp; &nbsp;{position} {currentTime1}</h3> */}
-                                <div className="position-title-con"><h3 className="position-title">&nbsp; &nbsp;{position} </h3>
+                                <div className="position-title-con">
+                                    <h3 className="position-title">&nbsp; &nbsp;{position}  </h3>
+                                   
                                 </div>
                                 <div className="Dashboard-position-list">
                                     {candidates.map((candidate, index) => (
-                                        <div key={`${position}-${candidate.id}`} className={candidates.length > 9 ? "Dashboard-candidate-list2" : "Dashboard-candidate-list"}>
+                                        <div key={`${position}-${candidate.id}`} className={candidates.length > 10 ? "Dashboard-candidate-list2" : "Dashboard-candidate-list"}>
                                             <div className="Dashboard-candidate-image-container">
-                                                <div className={candidates.length > 9 ? "Dashboard-circle-check-con2" : "Dashboard-circle-check-con"}
-                                                    style={{ backgroundColor: index + 1 === 1 ? '#f56c27' : index + 1 === 2 ? '#545150': index + 1 === 3 ? '#8db8f0' : '#d2d4d6' }}
-                                                ><span>{index + 1}</span></div>
+                                                <div className={candidates.length > 10 ? "Dashboard-circle-check-con2" : "Dashboard-circle-check-con"}
+                                                    style={{ backgroundColor: candidate.RankNumber === 1 ? 'gold' : candidate.RankNumber === 2 ? '#f56c27': candidate.RankNumber  === 3 ? '#8db8f0' : '#d2d4d6' }}
+                                                ><span>{candidate.RankNumber}</span></div>
                                                 <img src={`${assignedURL}/images/${candidate.Image_File}`} alt={candidate.Candidate_Name} className="Candidates-candidate-list" />
                                             </div>
                                             <div className="Dashboard-name-container">
-                                                <div className={candidates.length > 9 ? "Dashboard-name2" : "Dashboard-name1"}><span>{candidate.Candidate_Name} </span> </div>
+                                                <div className={candidates.length > 10 ? "Dashboard-name2" : "Dashboard-name1"}><span>{candidate.Candidate_Name} </span> </div>
                                                 <div className="Dashboard-name-container-total-votes"> <span>{candidate.Vote_Count}</span> </div>
-                                                <div className="Dashboard-name-container-vote-percentage"> <span> {candidate.Total_Votes !== 0 && candidate.Total_Votes !== null ? `${((candidate.Vote_Count / candidate.Total_Votes) * 100).toFixed(2)}%` : '0.00%'}</span> </div>
+                                                <div className="Dashboard-name-container-vote-percentage"> <span> {candidate.Total_Votes !== 0 && candidate.Total_Votes !== null ? `${((candidate.Vote_Count / (candidate.Total_Votes || 1)) * 100).toFixed(2)}%` : '0.00%'}</span> </div>
+                                                {/* <div className="Dashboard-name-container-vote-percentage"><span>{candidate.Total_Votes !== null && candidate.Total_Votes !== 0 ? `${((candidate.Vote_Count / candidate.Total_Votes) * 100).toFixed(2)}%` : '0.00%'}</span></div> */}
+                                          
+
                                             </div>
                                         </div>
                                     ))}

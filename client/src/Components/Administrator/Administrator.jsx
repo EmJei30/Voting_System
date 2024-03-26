@@ -46,13 +46,21 @@ const Administrator = () =>{
     
         if (response.ok) {
             const data = await response.json();
-            if (data.success) {
+            if (data) {
                 sessionStorage.setItem('isLoggedIn', true);
                 sessionStorage.setItem('usersName', data.username);
                 setisLoggedIn(true);
                 setUsersName(data.username);
                 nav('/admin-maintenance');
-            } else {
+            } else if (response.status === 401) {
+                // Display alert for specific error message from backend for 400 status code
+                const responseData = await response.json();
+                if (responseData.error) {
+                    alert(responseData.error);
+                } else {
+                    alert('User not found');
+                }
+            }else {
                 alert('Invalid credentials. Please check username or password...');
             }
         } else {

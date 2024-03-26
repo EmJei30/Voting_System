@@ -1,7 +1,31 @@
 const connection = require('../Database/connection');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+// Define the path to the images folder
+const imagesFolderPath = path.join(__dirname, '..', 'images');
 
+
+/**===============multer logic===================== */
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(__dirname, '..', 'images'); // Specify the directory for uploaded images
+      // Check if the images directory exists, if not, create it
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir);
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname); // Save the file with its original name
+    }
+  });
+
+
+  const upload = multer({ storage: storage }).array('images'); // Use multer middleware to handle file uploads
+
+
+  /**===============multer logic===================== */
 
 // Function to save image file to server
 const saveImage = (candidate) => {
@@ -52,10 +76,18 @@ const upload_candidate_info = async (req, res) => {
 
 /**Function to upload members */
 const upload_members_info = async (req, res) => {
+    const io = require('../server').io;
     const database = 'members';
     const members = req.body;
 
     try {
+        const deleteQuery = `DELETE FROM ${database}`;
+        await executeQuery(deleteQuery);
+
+         // Reset auto-increment value to 1
+         const resetAutoIncrementQuery = `ALTER TABLE ${database} AUTO_INCREMENT = 1`;
+         await executeQuery(resetAutoIncrementQuery);
+
         for (let member of members) {
             const checkExistenceQuery = `SELECT * FROM ${database} WHERE Member_Id = ?`;
             const existingRecords = await executeQuery(checkExistenceQuery, [member.Member_Id]);
@@ -74,7 +106,10 @@ const upload_members_info = async (req, res) => {
             const insertQuery = `INSERT INTO ${database} SET ?`;
             await executeQuery(insertQuery, newRecord);
         }
+        const selectQuery = `SELECT * FROM ${database}`;
+        const membersInfoUpdate = await executeQuery(selectQuery);
 
+        io.emit('updateMembersInfo', membersInfoUpdate);
         res.status(200).send("Members information uploaded successfully.");
     } catch (error) {
         console.error("Error uploading members information:", error);
@@ -126,9 +161,19 @@ const splitImagePath = (imagePath) => {
 
 // Function to insert new candidate record
  const insertCandidate = async(candidate) => {
+    const io = require('../server').io;
     const database = 'candidates';
     const cName = candidate.Candidate_Name;
     const cPosition = candidate.Candidate_Position;
+
+
+    const deleteQuery = `DELETE FROM ${database}`;
+    await executeQuery(deleteQuery);
+
+     // Reset auto-increment value to 1
+     const resetAutoIncrementQuery = `ALTER TABLE ${database} AUTO_INCREMENT = 1`;
+     await executeQuery(resetAutoIncrementQuery);
+
 
     const checkExistenceQuery = `SELECT * FROM ${database} WHERE Candidate_Name = ? AND  Candidate_Position = ?`;
     const existingRecords = await executeQuery(checkExistenceQuery, [cName, cPosition]);
@@ -142,11 +187,13 @@ const splitImagePath = (imagePath) => {
         Candidate_Position: candidate.Candidate_Position,
         Image_File: candidate.Image_file,
         Vote_Count: 0,
+        Is_Original: 'Original',
         Created_At: new Date(),
         Updated_At: new Date()
     };
     const insertQuery = `INSERT INTO ${database} SET ?`;
     await executeQuery(insertQuery, newRecord);
+
 }
 
 // Function to execute SQL queries
@@ -189,6 +236,20 @@ const get_candidates_info = async(req, res) => {
           res.status(500).send('An error occurred while retrieving the products.');
       }
 };
+
+/**Get final posted vote per Candidates Info */
+const get_posted_vote_per_candidate = async(req, res) => {
+      const database = 'candidates';
+      try {
+          const query = `SELECT * FROM ${database}`;
+          const results = await executeQuery(query);
+
+          res.json(results);
+      } catch (error) {
+          console.error('Error:', error);
+          res.status(500).send('An error occurred while retrieving the products.');
+      }
+};
 /**Get Candidates Info  per position*/
 const get_candidates_info_per_position = async(req, res) => {
     const {votePos} = req.query;
@@ -217,6 +278,19 @@ const get_candidates_max_count = async(req, res) => {
       }
 };
 
+/**Get signatories*/
+const get_signatories = async(req, res) => {
+    const database = 'signatories';
+    try {
+        const query = `SELECT * FROM ${database}`;
+        const results = await executeQuery(query);
+        res.json(results);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('An error occurred while retrieving the products.');
+    }
+};
+
 /**Get vote records */
 const get_vote_records = async(req, res) => {
     const database = 'vote_records';
@@ -230,6 +304,19 @@ const get_vote_records = async(req, res) => {
     }
 };
 
+/**Get vote records per member*/
+const get_vote_records_per_member = async(req, res) => {
+    const {idVoter} = req.query;
+    const database = 'vote_records';
+    try {
+        const query = `SELECT * FROM ${database} WHERE Voters_Id = '${idVoter}'`;
+        const results = await executeQuery(query);
+        res.json(results);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('An error occurred while retrieving the products.');
+    }
+};
 /**Get vote transactions */
 const get_voting_transactions = async(req, res) => {
     const database = 'voting_transaction';
@@ -341,7 +428,7 @@ const update_vote = async (req, res) => {
  
     const VotersID = uniqueID[0];
     const VotersDuration = updates[0].Voting_Duration;
-    console.log('VotersID',VotersID);
+    console.log('VotersID',VotersID, currentTime);
     console.log('duration', updates[0].Voting_Duration);
     if (!updates || !updates.length) {
         return res.status(400).json({ error: 'Invalid updates' });
@@ -383,13 +470,13 @@ const update_vote = async (req, res) => {
                     } else {
                         // console.log(`Vote count for candidate ${id} updated successfully`);
 
-                        const { Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration } = update;
-                        console.log(update)
+                        const { Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Image_File } = update;
+                        // console.log(update)
                         const Vcount = 1;
                         // Insert the updated record into database2
-                        const insertQuery = `INSERT INTO ${database2} (Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Vote_Count, Created_At, Updated_At) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+                        const insertQuery = `INSERT INTO ${database2} (Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Image_File, Vote_Count, Created_At, Updated_At) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
 
-                        connection.query(insertQuery, [Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Vcount], (insertErr, _result) => {
+                        connection.query(insertQuery, [Voters_Id, Voters_Name, Candidate_Name, Candidate_Position, Voting_Duration, Image_File, Vcount], (insertErr, _result) => {
                             if (insertErr) {
                                 console.error(`Error inserting record into ${database2} for candidate ${id}:`, insertErr);
                                 reject(insertErr);
@@ -421,7 +508,7 @@ const update_vote = async (req, res) => {
                         } else {
                             // Emit the updated record to the client
                             io.emit('UpdatedMemberRecord', updatedMemberResult[0]);
-                            console.log('updatedMemberResult', updatedMemberResult)
+                            // console.log('updatedMemberResult', updatedMemberResult)
                             // Emit the inserted records to the client
                             io.emit('InsertedVoteRecords', insertedRecords);
                             resolve();
@@ -666,6 +753,7 @@ const create_new_voting_date = async (req, res) => {
 
 
         let executecheckMultiplePosition = [];
+        const insertedRecords = [];
 
         const updateAndInsertRecords = async (records) => {
             for (const record of records) {
@@ -689,7 +777,8 @@ const create_new_voting_date = async (req, res) => {
                         // Update the Created_At and Updated_At properties in the record
                         record.Created_At = createdAt;
                         record.Updated_At = updatedAt;
-        
+                        record.Vote_Count = 0;
+                        record.Is_Original = '';
                         // Remove the id property from the record
                         delete record.id;
 
@@ -701,12 +790,20 @@ const create_new_voting_date = async (req, res) => {
                     if (results.length <= 0) {
                         // Insert the record into the database
                         const insertQuery = `INSERT INTO ${candidateDB} SET ?`;
-                        try {
-                            await executeQuery(insertQuery, record);
-                            console.log('Record inserted into the database:', record);
-                        } catch (error) {
-                            console.error('Error inserting record into the database:', error);
-                        }
+                       try {
+                           const insertResult = await executeQuery(insertQuery, record);
+                           const insertedId = insertResult.insertId; // Retrieve the ID of the newly inserted record
+                           console.log('Record inserted into the database with ID:', insertedId);
+
+                           // Fetch the inserted record from the database
+                           const selectQuery = `SELECT * FROM ${candidateDB} WHERE id = ?`;
+                           const selectResult = await executeQuery(selectQuery, insertedId);
+                           const insertedRecord = selectResult[0]; // Assuming only one record is returned
+                           console.log('Record inserted into the database with ID:', insertedRecord);
+                           insertedRecords.push(insertedRecord); // Push the fetched record into the array
+                       } catch (error) {
+                           console.error('Error inserting record into the database:', error);
+                       }
                     } else {
                         // Record exists, skip insertion
                         console.log('Record already exists in the database. Skipping insertion:', record);
@@ -739,10 +836,12 @@ const create_new_voting_date = async (req, res) => {
                         
                         // console.log('Remaining records after removal:', remainingRecords.length, hasElectedRecord.length);
                         await updateAndInsertRecords(remainingRecords);
+                     
                     }else{
                         const uniqueRecords = Array.from(new Set(executecheckMultiplePosition.map(record => JSON.stringify(record)))).map(JSON.parse);
 
                         await updateAndInsertRecords(uniqueRecords);
+                     
                     }
                   
                 }else{
@@ -753,13 +852,11 @@ const create_new_voting_date = async (req, res) => {
         }else{
             console.log('voting is for all');
         }
-      
-
-       
         //    // Query the database again to retrieve the newly inserted record
-          
+        // const getAllCandidates = `SELECT * FROM ${candidateDB}`;
+        // const checkgetAllCandidatesQuery = await executeQuery(getAllCandidates);;
 
-
+        io.emit('AdditionalCandidates', insertedRecords);
         res.status(200).send("Voting information uploaded successfully.");
     } catch (error) {
         console.error("Error uploading voting information:", error);
@@ -934,6 +1031,41 @@ const register = async(req, res) => {
     }
 };
 
+/**register */
+const change_password = async(req, res) => {
+    const { username, oldPassword, newPassword } = req.body;
+    console.log( req.body)
+    const database = 'users';
+    
+    try {
+        const { username, oldPassword, newPassword } = req.body;
+        const database = 'users';
+        
+        // Check if the username exists
+        const query = `SELECT * FROM ${database} WHERE Username = ?`;
+        const existingUser = await executeQuery(query, [username]);
+
+        if (existingUser.length === 0) {
+            return res.status(400).json({ error: 'User not found' });
+        }
+
+        // Check if the old password matches
+        const user = existingUser[0];
+        if (user.Password !== oldPassword) {
+            return res.status(401).json({ error: 'Incorrect old password' });
+        }
+
+        // Update the password
+        const updateQuery = `UPDATE ${database} SET Password = ? WHERE Username = ?`;
+        await executeQuery(updateQuery, [newPassword, username]);
+
+        // Send success response
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('An error occurred while changing the password.');
+    }
+};
 /**Reset all member voting status */
 const reset_all_member_status = async (req, res) => {
     const io = require('../server').io;
@@ -1093,7 +1225,7 @@ const post_vote_transaction = async (req, res) => {
                 }
             });
         }
-
+        io.emit('UpdateRefreshCandidates',  {message:'Posted'} );
         // console.log('updatePromises' , updatePromises);
         return res.status(200).json({ message: 'Records updated successfully' });
     } catch (error) {
@@ -1101,6 +1233,168 @@ const post_vote_transaction = async (req, res) => {
         return res.status(500).json({ error: 'Error updating vote count' });
     }
 };
+
+/**Reset */
+const reset_vote_transaction = async (req, res) => {
+    const io = require('../server').io;
+
+    const voteRecordsDB = 'vote_records';
+    const candidatesDB = 'candidates';
+    const memberDB = 'members';
+    const votingTransactionsDB ='voting_transaction';
+    try {
+
+        // Delete all records from vote_recordsDB
+        const deleteQueryVotingTrans = `DELETE FROM ${votingTransactionsDB}`;
+        await executeQuery(deleteQueryVotingTrans);
+
+        // Reset auto-increment value to 1
+        const resetAutoIncrementQueryVotingTrans = `ALTER TABLE ${votingTransactionsDB} AUTO_INCREMENT = 1`;
+        await executeQuery(resetAutoIncrementQueryVotingTrans);
+
+
+
+
+        // Delete all records from vote_recordsDB
+        const deleteQuery = `DELETE FROM ${voteRecordsDB}`;
+        await executeQuery(deleteQuery);
+
+        // Reset auto-increment value to 1
+        const resetAutoIncrementQuery = `ALTER TABLE ${voteRecordsDB} AUTO_INCREMENT = 1`;
+        await executeQuery(resetAutoIncrementQuery);
+
+        // Update candidates table to reset Vote_Count to 0 and set Voting_Status to NULL
+        const updateCandidatesQuery = `UPDATE ${candidatesDB} SET Vote_Count = 0, Voting_Status = NULL`;
+        await executeQuery(updateCandidatesQuery);
+
+        // Update member table to reset Voting_Duration to NULL and set Voting_Status to NULL
+        const updateMembersQuery = `UPDATE ${memberDB} SET Voting_Duration = NULL, Voting_Status = NULL`;
+        await executeQuery(updateMembersQuery);
+
+        const deleteQueryVoteTrans = `DELETE FROM ${candidatesDB} WHERE Is_Original != 'Original'`;
+        await executeQuery(deleteQueryVoteTrans);
+
+        // Reset auto-increment value to 1
+        const resetAutoIncrementQueryVoteTrans = `ALTER TABLE ${candidatesDB} AUTO_INCREMENT = 1`;
+        await executeQuery(resetAutoIncrementQueryVoteTrans);
+
+        const selectQuery = `SELECT * FROM ${candidatesDB}`;
+        const selectUpdatedCandidate = await executeQuery(selectQuery);
+
+        
+        const selectQueryMembers = `SELECT * FROM ${memberDB}`;
+        const selectUpdatedMembers = await executeQuery(selectQueryMembers);
+        
+        io.emit('UpdatedCandidate',  selectUpdatedCandidate );
+        io.emit('updateMembersInfo',  selectUpdatedMembers );
+        return res.status(200).json({ message: 'Vote records reset successfully' });
+    } catch (error) {
+        console.error('Error resetting vote transaction:', error);
+        return res.status(500).json({ error: 'Error resetting vote transaction' });
+    }
+};
+
+
+/**Upload Images */
+const upload_images = async (req, res) => {
+ try {
+    upload(req, res, async function (err) {
+      if (err instanceof multer.MulterError) {
+        // A Multer error occurred when uploading
+        console.error('Multer error:', err);
+        return res.status(400).send('Error uploading images');
+      } else if (err) {
+        // An unknown error occurred
+        console.error('Unknown error:', err);
+        return res.status(500).send('Internal Server Error');
+      }
+
+      // File uploads were successful
+      const uploadedFiles = req.files.map(file => file.filename);
+      // Here you can process the uploaded files further, such as saving their filenames to the database
+      // For example:
+      // await uploadModel.saveUploadedImages(uploadedFiles);
+
+      res.send('Images uploaded successfully...');
+    });
+  } catch (error) {
+    console.error('Error uploading images:', error);
+    res.status(500).send('Internal Server Error');
+  }
+
+}
+
+
+/**Delete Images */
+const delete_images = async (req, res) => {
+     // Function to delete all files in a directory
+  fs.readdir(imagesFolderPath, (err, files) => {
+    if (err) {
+      console.error('Error reading directory:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+
+    // Iterate through each file in the directory
+    files.forEach((file) => {
+      // Construct the full path to the file
+      const filePath = path.join(imagesFolderPath, file);
+
+      // Delete the file
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error('Error deleting file:', err);
+          return res.status(500).send('Internal Server Error');
+        }
+        console.log('File deleted successfully:', filePath);
+      });
+    });
+
+    res.send('All uploaded images deleted successfully');
+  });
+}
+
+
+
+/**Insert or Update Signatory */
+const insert_signatory = async (req, res) => {
+    const io = require('../server').io;
+
+    const signatoryDB = 'Signatories';
+    console.log('signatory', req.body)
+
+    const { signatoryName, signatoryPosition } = req.body;
+     // Check if there's a record with the same signatoryPosition
+     try {
+         // Update the password
+         const selectQuery = `SELECT * FROM ${signatoryDB} WHERE Signatory_Position = ?`;
+         const existingSignatory = await executeQuery(selectQuery, [signatoryPosition]);
+ 
+        
+        if (existingSignatory.length > 0) {
+            // Record with the same signatoryPosition already exists
+            // return res.status(400).json({ message: 'A signatory with the same position already exists' });
+
+             // Update the password
+            const updateQuery = `UPDATE ${signatoryDB} SET Signatory_Name = ?, Updated_At = CURRENT_TIMESTAMP WHERE Signatory_Position = ?`;
+            await executeQuery(updateQuery, [signatoryName, signatoryPosition]);
+            res.status(200).json({ message: 'Signatory updated successfully' });
+        }else{
+            const insertQuery = `INSERT INTO ${signatoryDB} (Signatory_Name, Signatory_Position) VALUES (?, ?)`;
+            await executeQuery(insertQuery, [signatoryName, signatoryPosition]);
+
+            res.status(200).json({ message: 'Signatory inserted successfully' });
+        }
+
+        // Send a success response
+
+
+    } catch (error) {
+        console.error('Error inserting signatory:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+
+};
+
 module.exports = {
     saveImage,
     insertCandidate,
@@ -1115,6 +1409,7 @@ module.exports = {
 
     update_vote,
     get_vote_records,
+    get_vote_records_per_member,
     update_member_status,
 
   /**Create new voting date */
@@ -1126,10 +1421,28 @@ module.exports = {
     /**Login */
     login,
     register,
+    change_password,
     reset_all_member_status,
 
     /**Update candidate multi run status*/
     update_candidate_multirun,
     update_candidate_multirun_false,
-    post_vote_transaction
+    post_vote_transaction,
+
+    /**Reset */
+    reset_vote_transaction,
+
+    /**get final posted votes per candidate */
+    get_posted_vote_per_candidate,
+
+      /**Upload Images */
+      upload_images,
+
+        /**Delete Images */
+    delete_images,
+
+    
+    /**Insert or Update Signatory */
+    insert_signatory,
+    get_signatories
 }

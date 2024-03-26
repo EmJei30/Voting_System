@@ -74,6 +74,16 @@ body{
 }
 .WinningCandidates-tab-container-span{
     height: 5%;
+    position: relative;
+}
+.WinningCandidates-tab-container-span-button{
+    position: absolute;
+    height: 100%;
+    top: 0;
+    right: 4%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 /**confirmation message*/
 .WinningCandidates-Home_Con-confirmation{
@@ -406,6 +416,7 @@ body{
     max-height: 79%;
     background-color: rgb(240, 246, 240);
     overflow-y: auto;
+    /* background-color: red; */
 }
 .WinningCandidates-confirmation-details-container{
     display: flex;
@@ -413,7 +424,7 @@ body{
     justify-content: start;
     border-bottom: 1px solid rgb(217, 206, 206);
     /* background-color: red; */
-  
+    min-height: 20%;
 }
 .WinningCandidates-confirmation-details-container h2{
     font-size: 14px;
@@ -809,3 +820,147 @@ body{
         width:40%; /* For desktop, show 2 candidates per row */
     }
 }   
+
+.signatories{
+    height: 20%;
+    /* background-color: #3728a3; */
+    display: none;
+    align-items: center;
+    justify-content: end;
+}
+.signatory-container{
+    height: 50%;
+    width:77%;
+    /* background-color: #b52929; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.certified{
+    height: 100%;
+    width: 50%;
+    display: block;
+    /* background-color: rebeccapurple; */
+}
+.certified-span{
+    width: 100%;
+    /* background-color: rgb(51, 153, 61); */
+}
+.certified-span2{
+    width: 100%;
+    /* background-color: rgb(51, 80, 153); */
+    display: flex;
+    align-items: center;
+    justify-self: center;
+}
+.certified-span2 span{
+    width: 80%;
+    /* margin: auto; */
+    text-align: center;
+    /* background-color: rgb(70, 153, 51); */
+}
+.certified-span2-line{
+    width: 80%;
+    border-bottom: 1px solid black;
+    /* background-color: red; */
+}
+.certified-span2-line div{
+    margin: auto;
+    width: 60%;
+    text-align: center;
+    /* background-color: rgb(0, 140, 255); */
+}
+@media print {
+    /* Hide non-essential elements */
+    body * {
+        visibility: hidden;
+    }
+    #dashboard-display2, #dashboard-display2 * {
+        visibility: visible;
+    }
+
+    /* Define print styles */
+    #dashboard-display2 {
+        position: fixed;
+        left: 0;
+        top: 0;
+    }
+    .WinningCandidates-confirmation-details-box{
+        width: 20%;
+        height:93%;
+        border-radius: 15px;
+        background-color: #ef0909;
+        background-color: #ef0909 !important;
+        position: absolute;
+        z-index: 0;
+    }
+    .WinningCandidates-confirmation-candidate-list-selected {
+        height: 150px; /* Adjust the height as needed */
+        /* Additional print styles */
+      }
+      .WinningCandidates-confirmation-candidate-list-selected img {
+        width: 75%;
+        height: 70%; /* Maintain aspect ratio */
+        /* cursor: pointer; */
+        position: relative;
+        border-radius: 50%;
+        
+    }
+    .WinningCandidates-name-container3 p{
+        margin-top: 1%;
+       font-size: 14px;
+    }
+    .WinningCandidates-circle-check-con{
+        width: 16%;
+        height: 22%;
+        background-color: rgb(61, 52, 242);
+        background-color: rgb(61, 52, 242) !important;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        z-index: 4;
+        left: calc(100% - 22%);
+        bottom: 65%;
+        color: rgb(12, 12, 12);
+        font-weight: 500;
+    }
+    .signatories{
+        height: 20%;
+        /* background-color: #3728a3; */
+        display: flex;
+        align-items: center;
+        justify-content: end;
+        outline: none;
+        border: none;
+    }
+    .signatory-container{
+        border: none;
+        height: 50%;
+        width:77%;
+    }
+    .certified-span2-line{
+        width: 80%;
+        border-bottom: 1px solid black;
+        /* background-color: red; */
+    }
+    .certified-span2-line div{
+        margin: auto;
+        width: 60%;
+        /* background-color: rgb(0, 140, 255); */
+    }
+    .certified-span2{
+        width: 80%;
+        /* background-color: rgb(51, 80, 153); */
+        display: flex;
+        align-items: center;
+        justify-self: center;
+    }
+    .certified-span2 span{
+        width: 100%;
+        font-size: 12;
+        margin: auto;
+        /* background-color: rgb(70, 153, 51); */
+    }
+} 

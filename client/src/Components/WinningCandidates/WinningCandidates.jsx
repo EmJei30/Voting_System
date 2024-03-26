@@ -21,14 +21,15 @@ const WinningCandidates = () => {
     // const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
     // const [highestVoteCount, setHighestVoteCount]= useState([]);
     const [showAlert, setShowAlert] = useState(false);
-
+    const [candidatesWinning, setCandidatesWinning]= useState([]);
+    const [signatoriesPersonnel, setSignatoriesPersonnel]= useState([]);
     const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
     const positions = Object.keys(groupedCandidates);
     const nav = useNavigate();
     
     useEffect(() => {
         fetchCandidatesMaxCount();
-     
+        fetchSignatories();
     }, []);
     useEffect(() => {
         fetchCandidates();
@@ -44,28 +45,20 @@ const WinningCandidates = () => {
         const socket = io(`${assignedURL}`);
 
         socket.on('UpdatedVoteCount', (UpdatedVoteCount) => {
-            const {newRecord} = UpdatedVoteCount;
-                console.log('candidates12321', candidates);
-                console.log('groupedCandidates', groupedCandidates);
-                console.log('maximumCandidates', maxCandidatesPerPositionState);
-                console.log('newRecord', newRecord);
-              
+            const updatedCandidateJSON = sessionStorage.getItem('updatedCandidates');
+            const updatedcandidate = updatedCandidateJSON ? JSON.parse(updatedCandidateJSON) : {}; 
+
+            const {newRecord} = UpdatedVoteCount;               
                 // Update the vote count for the candidate with the matching ID
-                const updatedData = candidates.map(candidate => {
+                const updatedData = updatedcandidate.map(candidate => {
                     const matchingRecord = newRecord.find(record => record.id === candidate.id);
                     return matchingRecord ? { ...candidate, Vote_Count: matchingRecord.Vote_Count } : candidate;
                 });
-/**new update to insert multi position on winning dashboard */
-                // Add new records from newRecord to candidates if there's a match based on ID and Candidate_Position
-newRecord.forEach(record => {
-    const exists = candidates.some(candidate => candidate.id === record.id && candidate.Candidate_Position === record.Candidate_Position);
-    if (!exists) {
-        updatedData.push(record);
-    }
-});
-                console.log('updatedData', updatedData);
+
                 // Update the candidates state
                 setCandidates(updatedData);
+                setCandidatesWinning(updatedData);
+                sessionStorage.setItem('updatedCandidates', JSON.stringify(updatedData));
                 /**Get the total vote per position and add new property per position */
                 let totalVotesPerPosition = {};
 
@@ -87,7 +80,6 @@ newRecord.forEach(record => {
                     ...candidate,
                     Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
                 }));
-                console.log('newRecordWithTotalVotes',newRecordWithTotalVotes)
                 // Group the updated candidates by position
                 const list = CandidatesList(newRecordWithTotalVotes);
                 setGroupedCandidates(list);
@@ -125,10 +117,6 @@ newRecord.forEach(record => {
                 topVoteCountsPerPosition[position] = topVoteCounts;
             });
             
-
-
-
-            console.log('topVoteCountsPerPosition', topVoteCountsPerPosition);
             // Now, filter the candidates based on the top Vote_Count values
             const candidatesInTopRanking = [];
             updatedData.forEach(candidate => {
@@ -142,7 +130,6 @@ newRecord.forEach(record => {
             });
 
             // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-            console.log('candidatesInTopRanking', candidatesInTopRanking);
             const highestlist = CandidatesList(candidatesInTopRanking);
            
 
@@ -180,7 +167,118 @@ newRecord.forEach(record => {
         // fetchCandidates()
         });
 
+        socket.on('UpdatedCandidate',(newRecord) =>{
+            sessionStorage.setItem('updatedCandidates', JSON.stringify(newRecord));
+            setCandidates(newRecord)
+            let totalVotesPerPosition = {};
 
+            newRecord.forEach(candidate => {
+                if (candidate.Vote_Count > 0) {
+                    // Check if the position already exists in the totalVotesPerPosition object
+                    if (!totalVotesPerPosition[candidate.Candidate_Position]) {
+                        // If it doesn't exist, initialize the total votes for that position
+                        totalVotesPerPosition[candidate.Candidate_Position] = candidate.Vote_Count;
+                    } else {
+                        // If it exists, add the candidate's vote count to the existing total votes for that position
+                        totalVotesPerPosition[candidate.Candidate_Position] += candidate.Vote_Count;
+                    }
+                }
+            });
+            
+            // Iterate over the newRecord array to add the Total_Votes property
+            const newRecordWithTotalVotes = newRecord.map(candidate => ({
+                ...candidate,
+                Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
+            }));
+            // Group the updated candidates by position
+            const list = CandidatesList(newRecordWithTotalVotes);
+            setGroupedCandidates(list);
+        
+         let candidatesWithMaxVotePerPosition = {}; // Object to store candidates with the highest vote count per position
+
+        const maxCandidatePerPositionState = maxCandidatesPerPositionState;
+
+        // Initialize the candidatesWithMaxVotePerPosition object with arrays for each position
+        maxCandidatePerPositionState.forEach(position => {
+            candidatesWithMaxVotePerPosition[position.Candidate_Position] = [];
+        });
+
+        const topVoteCountsPerPosition = {};
+        Object.values(maxCandidatePerPositionState).forEach(positionData => {
+            const position = positionData.Candidate_Position;
+            const maxCandidates = positionData.Candidate_Count;
+        
+            // Find candidates for this position
+            const candidatesForPosition = newRecord.filter(candidate => candidate.Candidate_Position === position);
+        
+            // Sort candidates by Vote_Count in descending order
+            candidatesForPosition.sort((a, b) => b.Vote_Count - a.Vote_Count);
+        
+            // Get the top Vote_Count values for this position, ensuring uniqueness and greater than 0
+            let topVoteCounts = [];
+            let currentRank = 1;
+            for (let i = 0; i < candidatesForPosition.length && topVoteCounts.length < maxCandidates; i++) {
+                const candidate = candidatesForPosition[i];
+                if (candidate.Vote_Count > 0 && !topVoteCounts.includes(candidate.Vote_Count)) {
+                    topVoteCounts.push(candidate.Vote_Count);
+                    currentRank++;
+                }
+            }
+            topVoteCountsPerPosition[position] = topVoteCounts;
+        });
+        
+        // Now, filter the candidates based on the top Vote_Count values
+        const candidatesInTopRanking = [];
+        newRecord.forEach(candidate => {
+            const position = candidate.Candidate_Position;
+            const topVoteCounts = topVoteCountsPerPosition[position];
+
+            if (topVoteCounts && topVoteCounts.includes(candidate.Vote_Count)) {
+                // If the candidate's Vote_Count is within the top Vote_Count values for this position, add it
+                candidatesInTopRanking.push(candidate);
+            }
+        });
+
+        // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
+        const highestlist = CandidatesList(candidatesInTopRanking);
+       
+
+         /**Filter the Highest vote counts and return only exactly the maximum count per position based on Vote_Count */
+         const storage = {};
+
+                // Iterate through each position
+                for (const position in topVoteCountsPerPosition) {
+                    if (!topVoteCountsPerPosition.hasOwnProperty(position)) continue;
+
+                    const positionVoteCounts = topVoteCountsPerPosition[position];
+                    const maxCount = maxCandidatePerPositionState.find(entry => entry.Candidate_Position === position).Candidate_Count;
+
+                    if (!maxCount) continue; // Skip if max count not found
+
+                    // Initialize an array to store candidates for this position
+                    storage[position] = [];
+
+                    // Iterate through each vote count for the position
+                    for (const voteCount of positionVoteCounts) {
+                        // Collect candidates with the current vote count
+                        const candidatesWithVoteCount = candidatesInTopRanking.filter(candidate =>
+                            candidate.Candidate_Position === position && candidate.Vote_Count === voteCount
+                        );
+
+                        // Push all candidates with the same vote count
+                        storage[position] = storage[position].concat(candidatesWithVoteCount);
+
+                        // Check if the maximum count is reached for this position
+                        if (storage[position].length >= maxCount) break;
+                    }
+                }
+                        
+             setHighestVoteCount(storage);
+        });
+        socket.on('UpdateRefreshCandidates',(newRecord) =>{
+            fetchCandidates();
+        });
+        
         return () => {
             socket.disconnect();
         };
@@ -203,10 +301,10 @@ newRecord.forEach(record => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log(data);
                  
                     setCandidates(data)
-
+                    setCandidatesWinning(data)
+                    sessionStorage.setItem('updatedCandidates', JSON.stringify(data));
                     let totalVotesPerPosition = {};
 
                     data.forEach(candidate => {
@@ -227,7 +325,7 @@ newRecord.forEach(record => {
                         ...candidate,
                         Total_Votes: totalVotesPerPosition[candidate.Candidate_Position] || 0 // Assign the total votes for the candidate's position or 0 if not found
                     }));
-                    console.log('newRecordWithTotalVotes',newRecordWithTotalVotes)
+
                     // Group the updated candidates by position
                     const list = CandidatesList(newRecordWithTotalVotes);
                     setGroupedCandidates(list);
@@ -265,10 +363,6 @@ newRecord.forEach(record => {
                     topVoteCountsPerPosition[position] = topVoteCounts;
                 });
                 
-    
-    
-    
-                console.log('topVoteCountsPerPosition', topVoteCountsPerPosition);
                 // Now, filter the candidates based on the top Vote_Count values
                 const candidatesInTopRanking = [];
                 data.forEach(candidate => {
@@ -282,12 +376,7 @@ newRecord.forEach(record => {
                 });
     
                 // Now candidatesInTopRanking array contains all the candidates with Vote_Count in the top ranking for their positions
-                console.log('candidatesInTopRanking', candidatesInTopRanking);
                 const highestlist = CandidatesList(candidatesInTopRanking);
-              
-                console.log('11111',candidatesInTopRanking);
-                console.log('11112',maxCandidatePerPositionState)
-                console.log('11113', topVoteCountsPerPosition);
 
 
                 /**Filter the Highest vote counts and return only exactly the maximum count per position based on Vote_Count */
@@ -322,7 +411,6 @@ newRecord.forEach(record => {
                             
             
                 // const matchedCandidates = matchCandidatesWithVoteCounts(candidatesInTopRanking, topVoteCountsPerPosition);
-                console.log('11114',storage);
                 setHighestVoteCount(storage);
                 } else {
                     console.log('No Records')
@@ -335,36 +423,12 @@ newRecord.forEach(record => {
         }
     }
 
-    // Function to iterate through candidates and match their Vote_Count with the corresponding position
-// function matchCandidatesWithVoteCounts(candidates, voteCounts) {
-//     const storage = {};
-
-//     candidates.forEach(candidate => {
-//         const { Candidate_Position, Vote_Count } = candidate;
-//         const positionVoteCounts = voteCounts[Candidate_Position];
-
-//         if (!positionVoteCounts) return; // If no vote counts for this position, skip
-
-//         const matchedCount = positionVoteCounts.find(count => count === Vote_Count);
-
-//         if (matchedCount) {
-//             if (!storage[Candidate_Position]) {
-//                 storage[Candidate_Position] = [];
-//             }
-//             storage[Candidate_Position].push(candidate);
-//         }
-//     });
-
-//     return storage;
-// }
-    console.log('highestVoteCount',highestVoteCount)
     const fetchCandidatesMaxCount = async () => {
         try {
             const response = await fetch(`${assignedURL}/get_candidates_max_count`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('get_candidates_max_count',data);
                     setMaxCandidatesPerPositionState(data)
                 } else {
                     console.log('No Records')
@@ -389,6 +453,24 @@ newRecord.forEach(record => {
 
         return groupedCandidates;
     };
+    /**Fetch signatories */
+    const fetchSignatories = async () => {
+        try {
+            const response = await fetch(`${assignedURL}/get_signatories`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+                    setSignatoriesPersonnel(data);
+                } else {
+                    console.log('No Records')
+                }
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
     const handleLogout = () => {
         sessionStorage.removeItem('isLoggedIn');
         sessionStorage.removeItem('usersName');
@@ -434,8 +516,7 @@ newRecord.forEach(record => {
             // If the maximum limit is reached, display an alert
             alert(`Maximum number of candidates (${maxCandidatesPerPosition[pos]}) reached for position ${pos}.`);
         }
-    };
-    
+    };   
     
     /**Function to remove candidate */
     const handleRemoveCandidate = (pos, can) => {
@@ -454,9 +535,9 @@ newRecord.forEach(record => {
     const handleBack = () =>{
         nav('/admin-maintenance')
     }
-    console.log('selectedCandidate', selectedCandidate)
-    console.log('highestVoteCount', highestVoteCount)
-    console.log('maxCandidatesPerPositionState', maxCandidatesPerPositionState)
+    const handlePrint = () => {
+        window.print(); // Trigger the browser's print functionality
+      };
     return (
         <div className="WinningCandidates-Home_Con">
             {showAlert && (
@@ -472,13 +553,13 @@ newRecord.forEach(record => {
      
                 <div className="WinningCandidates-tab-container-span">
                 <ExitToAppRoundedIcon onClick={handleBack} fontSize="large" className="return-icon"/>
-            
+                <button onClick={handlePrint} className="WinningCandidates-tab-container-span-button"> <span>Print</span></button>
                 </div>
             
 
                 <div className="WinningCandidates-tab-body">
         
-                    <div className="WinningCandidates-Home_Con-confirmation">
+                    <div className="WinningCandidates-Home_Con-confirmation" id="dashboard-display2">
                         <div className="WinningCandidates-confirmation">
                             <div className="WinningCandidates-confirmation-details-box"></div>
                                 <div className="WinningCandidates-confirmation-voter">
@@ -510,7 +591,7 @@ newRecord.forEach(record => {
                                             {candidates.map((candidate, index) => (
                                                 <div key={`${position}-${candidate.id}`} className="WinningCandidates-confirmation-candidate-list-selected">
                                                         <div className="WinningCandidates-image-container2">
-                                                            <div className="WinningCandidates-circle-check-con"><span>{candidate.Vote_Count}</span></div>
+                                                            <div className="WinningCandidates-circle-check-con" style={{ backgroundColor: 'rgb(61, 52, 242)' }}><span>{candidate.Vote_Count}</span></div>
                                                             <img src={`${assignedURL}/images/${candidate.Image_File}`} alt={candidate.Candidate_Name} className='candidate-image'  />
                                                         </div>
                                                     
@@ -522,8 +603,31 @@ newRecord.forEach(record => {
                                             </div>
                                         </div>
                                     ))}
+                                <div className="signatories">
+                                    <div className="signatory-container">
+                                        {signatoriesPersonnel.map((signatory, index) => (
+                                            signatory.Signatory_Position === 'ELECTION COMMITTEE CHAIRPERSON' ? (
+                                                <div className="certified" key={index}>
+                                                    <div className="certified-span"><span>Certified By:</span></div>
+                                                    <div className="certified-span2-line"><div>{signatory.Signatory_Name}</div></div>
+                                                    <div className="certified-span2"><span>ELECTION COMMITTEE CHAIRPERSON</span></div>
+                                                </div>
+                                            ) : null
+                                        ))}
+                                         {signatoriesPersonnel.map((signatory, index) => (
+                                            signatory.Signatory_Position === 'BOD CHAIRPERSON' ? (
+                                                <div className="certified" key={index}>
+                                            <div className="certified-span"><span >Noted By:</span></div>
+                                            <div className="certified-span2-line"><div>{signatory.Signatory_Name}</div></div>
+                                            <div className="certified-span2"><span>BOD CHAIRPERSON</span></div>
+                                        </div>
+                                         ) : null
+                                         ))}
+                                  
+                                    </div>
                                 </div>
-                                
+                            </div>
+                             
                         </div>
                    
                 </div>

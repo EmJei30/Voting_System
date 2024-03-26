@@ -30,6 +30,7 @@ const Voting = () => {
             VoteTransactions, setVoteTransactions, setMembersInfo, otpCode, setOtpCode } = useContext(VotingContext);
     const [uploadedCsvFile, setUploadedCsvFile] = useState([]);
     const [selectedRecords, setSelectedRecords] = useState([]);
+    const [previousSelectedCandidates, setPreviousSelectedCandidates] = useState([]);
     const [groupedCandidates, setGroupedCandidates] = useState([]);
     const [selectedCandidate, setSelectedCandidate] = useState([]);
     const [maxCandidatesPerPositionState, setMaxCandidatesPerPositionState] =  useState([]);
@@ -48,7 +49,8 @@ const Voting = () => {
     const [VotingPosition, setVotingPosition] = useState('');
     const [timer, setTimer] = useState(0);
     const [intervalId, setIntervalId] = useState(null);
-
+    
+    const[isPrintDone, setIsPrintDone]= useState(false);
 
     const [dataForConfirmation, setDataForConfirmation] = useState([]);
     const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
@@ -57,9 +59,9 @@ const Voting = () => {
     const currentPosition = positions[currentPositionIndex];
     const nav = useNavigate();
 
-    console.log('membersInfo',membersInfo)
+    // console.log('usersID',usersID, VoteTransactions)
     useEffect(() => {
-      
+       
         // fetchCandidates();
         fetchCandidatesMaxCount();
         const selectedCandidateJSON = localStorage.getItem('selectedCandidate');
@@ -85,7 +87,10 @@ const Voting = () => {
     }else{
         fetchCandidatesSinglePost(votingPos);
     }
-
+    const voterid =  sessionStorage.getItem('usersID');
+    if(voterid){
+        fetchVoteRecordsPerMember(voterid)
+    }
     }, []);
 
     useEffect(()=>{
@@ -189,6 +194,30 @@ const Voting = () => {
             console.error('Error:', error);
         }
     }
+
+    /**Fetch vote records per member */
+    const fetchVoteRecordsPerMember = async (idVoter) => {
+        try {
+            const queryParams = new URLSearchParams({idVoter: idVoter});
+            const response = await fetch(`${assignedURL}/get_vote_records_per_member?${queryParams}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+                    console.log('vote recs',data);
+                    const list = CandidatesList(data);
+                    setPreviousSelectedCandidates(list)
+                    console.log('vote recs',list);
+                } else {
+                    console.log('No Records')
+                }
+            } else {
+                console.error('Error:', response.status);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
     const CandidatesList = (candidatesData) => {
         const groupedCandidates = {};
 
@@ -247,10 +276,11 @@ const Voting = () => {
         localStorage.removeItem('selectedCandidate');
         localStorage.removeItem('isSubmitted');
         localStorage.removeItem('selectedRecords');
+      
         setOtpCode('');
         setSelectedRecords([])
-        setIsSubmitted(false)
         setisLoggedIn(false);
+        setIsSubmitted(false)
         setUsersName('');
         setUsersID('');
         setGroupedCandidates([]);
@@ -405,7 +435,7 @@ const Voting = () => {
         }else{
             newMax = maxCandidatesPerPositionState.filter(rec => rec.Candidate_Position === VotingPosition);
         }
-        console.log('newMax', newMax, maxCandidatesPerPositionState)
+        console.log('newMax', newMax, maxCandidatesPerPositionState, selectedCandidate)
         
         // Iterate over maxCandidatesPerPositionState
         for (const positionData of newMax) {
@@ -466,7 +496,32 @@ const Voting = () => {
             return true; // Keep the candidate in UpdatedCandidates
         });
          /**Set the grouped data for confirmation and printing */
-          setDataForConfirmation(grouped);
+       
+          if(previousSelectedCandidates){
+                                        // Iterate over each group in the grouped state
+                            // Iterate over each group in the grouped state
+                // Copy the existing groups from previousSelectedCandidates
+                const combinedSelectedCandidates = { ...previousSelectedCandidates };
+
+                // Iterate over each group in the grouped state
+                Object.keys(grouped).forEach(groupName => {
+                    // Check if the group exists in previousSelectedCandidates
+                    if (!combinedSelectedCandidates.hasOwnProperty(groupName)) {
+                        // If the group doesn't exist, add it to combinedSelectedCandidates
+                        combinedSelectedCandidates[groupName] = grouped[groupName];
+                    } else {
+                        // If the group exists, log a message indicating that it already exists
+                        console.log(`${groupName} group exists in previousSelectedCandidates`);
+                    }
+                });
+
+            // Log combinedSelectedCandidates to verify the changes
+            setDataForConfirmation(combinedSelectedCandidates);
+            console.log('selectedCandidate1111',selectedCandidate)
+          }else{
+            setDataForConfirmation(grouped);
+          }
+          console.log('setDataForConfirmation',grouped);
         if(updatedCandidatesWithVotersName.length > 0){
             setShowConfirmation(true)
         }else{
@@ -491,7 +546,7 @@ const Voting = () => {
             Voters_Id: usersID ,
             Voting_Duration: timer
         }));
-    
+        console.log('submit vote', updatedCandidatesWithVotersName)
         try {
 			const response = await fetch(`${assignedURL}/update_vote`, {
                 method: 'PUT',
@@ -530,12 +585,12 @@ const Voting = () => {
         console.log('print');
     }
     const handleDownloadReceipt = () =>{
-        console.log('asdadasdas')
+        setIsPrintDone(true);
         generatePDF(dataForConfirmation);
     }
     const generatePDF = (dataForConfirmation) => {
         const doc = new jsPDF({
-            orientation: 'p', // portrait orientation
+            orientation: 'l', // landscape orientation
             unit: 'pt', // points
             format: 'letter', // letter size
             putOnlyUsedFonts: true,
@@ -570,10 +625,13 @@ const Voting = () => {
         doc.text(`Reference No: ${otpCode}`, 40, yPos);
         yPos += 20; // Adjust vertical spacing
     
-        // Iterate over each position in dataForConfirmation
+        // Add a vertical line to separate the two columns
+        doc.setLineWidth(1);
+        doc.line(pageWidth / 2, marginTop, pageWidth / 2, pageHeight);
+    
+        // Iterate over each position in dataForConfirmation for the left column
         for (const position in dataForConfirmation) {
             const candidates = dataForConfirmation[position];
-            const lastCandidateIndex = candidates.length - 1; // Index of the last candidate
     
             // Add position header on the left side
             doc.setFontSize(12);
@@ -582,15 +640,9 @@ const Voting = () => {
             yPos += 20;
     
             // Add candidates under the position on the left side
-            candidates.forEach((candidate, index) => {
+            candidates.forEach(candidate => {
                 doc.text(`- ${candidate.Candidate_Name}`, 60, yPos);
                 yPos += 15; // Adjust vertical spacing between candidates
-    
-                // Draw a horizontal line after the last candidate
-                if (index === lastCandidateIndex) {
-                    doc.line(40, yPos, pageWidth / 2 - 40, yPos);
-                    yPos += 5; // Adjust vertical spacing after the line
-                }
             });
     
             // Remove line between positions
@@ -609,10 +661,9 @@ const Voting = () => {
         doc.text(`Reference No: ${otpCode}`, pageWidth / 2 + 40, yPos);
         yPos += 20; // Adjust vertical spacing
     
-        // Iterate over each position in dataForConfirmation (same as left side)
+        // Iterate over each position in dataForConfirmation for the right column
         for (const position in dataForConfirmation) {
             const candidates = dataForConfirmation[position];
-            const lastCandidateIndex = candidates.length - 1; // Index of the last candidate
     
             // Add position header on the right side
             doc.setFontSize(12);
@@ -621,15 +672,9 @@ const Voting = () => {
             yPos += 20;
     
             // Add candidates under the position on the right side
-            candidates.forEach((candidate, index) => {
+            candidates.forEach(candidate => {
                 doc.text(`- ${candidate.Candidate_Name}`, pageWidth / 2 + 60, yPos);
                 yPos += 15; // Adjust vertical spacing between candidates
-    
-                // Draw a horizontal line after the last candidate
-                if (index === lastCandidateIndex) {
-                    doc.line(pageWidth / 2 + 40, yPos, pageWidth - 40, yPos);
-                    yPos += 5; // Adjust vertical spacing after the line
-                }
             });
     
             // Remove line between positions
@@ -652,7 +697,128 @@ const Voting = () => {
     const handleClose = () =>{
         setIsSubmitConfirmation(false);
     }
-    console.log('candidates', candidates);
+    const handleExit = ()=>{
+        // Iterate over each position in maxCandidatesPerPositionState
+        // Extract the positions from maxCandidatesPerPositionState
+        const positions = maxCandidatesPerPositionState.map(candidate => candidate.Candidate_Position);
+
+        // Check if all positions exist as groups in previousSelectedCandidates
+        const allPositionsExist = positions.every(position => dataForConfirmation.hasOwnProperty(position));
+
+
+        if(!isPrintDone){
+            if(allPositionsExist){
+                generatePDFSaveOnly(dataForConfirmation);
+                setIsSubmitConfirmation(false);
+                handleLogout();
+            }else{
+                setIsSubmitConfirmation(false);
+                handleLogout();
+            }
+           
+        }else{
+            handleLogout();
+        }
+
+    }
+    const generatePDFSaveOnly = (dataForConfirmation) => {
+        const doc = new jsPDF({
+            orientation: 'l', // landscape orientation
+            unit: 'pt', // points
+            format: 'letter', // letter size
+            putOnlyUsedFonts: true,
+            floatPrecision: 16, // Precision of coordinates and dimensions
+            compress: true // Compress output
+        });
+    
+        // Set margins
+        const marginLeft = 20; // Adjust left margin
+        const marginRight = 20; // Adjust right margin
+        const marginTop = 20; // Adjust top margin
+        const marginBottom = 20; // Adjust bottom margin
+    
+        // Set the page width and height considering the margins
+        const pageWidth = doc.internal.pageSize.getWidth() - marginLeft - marginRight;
+        const pageHeight = doc.internal.pageSize.getHeight() - marginTop - marginBottom;
+    
+        // Set up initial y-position for content
+        let yPos = marginTop;
+    
+        // Add "Voter's Copy" label on the left side
+        doc.setFontSize(12);
+        doc.setTextColor(0); // Set text color to black
+        doc.text(`Voter's Copy`, 40, yPos);
+        yPos += 20; // Adjust vertical spacing
+    
+        // Add user's name on the left side
+        doc.text(`Name: ${usersName}`, 40, yPos);
+        yPos += 20; // Adjust vertical spacing
+    
+        // Add additional text on the left side
+        doc.text(`Reference No: ${otpCode}`, 40, yPos);
+        yPos += 20; // Adjust vertical spacing
+    
+        // Add a vertical line to separate the two columns
+        doc.setLineWidth(1);
+        doc.line(pageWidth / 2, marginTop, pageWidth / 2, pageHeight);
+    
+        // Iterate over each position in dataForConfirmation for the left column
+        for (const position in dataForConfirmation) {
+            const candidates = dataForConfirmation[position];
+    
+            // Add position header on the left side
+            doc.setFontSize(12);
+            doc.setTextColor(0); // Set text color to black
+            doc.text(`${position} :`, 40, yPos); // Print position name
+            yPos += 20;
+    
+            // Add candidates under the position on the left side
+            candidates.forEach(candidate => {
+                doc.text(`- ${candidate.Candidate_Name}`, 60, yPos);
+                yPos += 15; // Adjust vertical spacing between candidates
+            });
+    
+            // Remove line between positions
+            yPos += 10; // Add some extra spacing between positions
+        }
+    
+        // Add "Company Copy" label on the right side
+        doc.text(`Company Copy`, pageWidth / 2 + 40, marginTop);
+        yPos = marginTop + 20; // Reset yPos for the right side
+    
+        // Add user's name on the right side
+        doc.text(`Name: ${usersName}`, pageWidth / 2 + 40, yPos);
+        yPos += 20; // Adjust vertical spacing
+    
+        // Add additional text on the right side
+        doc.text(`Reference No: ${otpCode}`, pageWidth / 2 + 40, yPos);
+        yPos += 20; // Adjust vertical spacing
+    
+        // Iterate over each position in dataForConfirmation for the right column
+        for (const position in dataForConfirmation) {
+            const candidates = dataForConfirmation[position];
+    
+            // Add position header on the right side
+            doc.setFontSize(12);
+            doc.setTextColor(0); // Set text color to black
+            doc.text(`${position} :`, pageWidth / 2 + 40, yPos); // Print position name
+            yPos += 20;
+    
+            // Add candidates under the position on the right side
+            candidates.forEach(candidate => {
+                doc.text(`- ${candidate.Candidate_Name}`, pageWidth / 2 + 60, yPos);
+                yPos += 15; // Adjust vertical spacing between candidates
+            });
+    
+            // Remove line between positions
+            yPos += 10; // Add some extra spacing between positions
+        }
+    
+        // Save or print the document
+        doc.save(`voting_receipt_${usersName}.pdf`);
+    
+    };
+    
     const HandelResetVote = () =>{
         if(isSubmitted){
             // alert('Vote already submitted...')
@@ -730,7 +896,7 @@ const Voting = () => {
         const minutes = Math.floor(timeInSeconds / 60);
         const seconds = timeInSeconds % 60;
         return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-      };
+    };
     return (
         <div className="Voting-Home_Con">
              {/* <div className="background-template"><div className="background-template-inner"></div></div> */}
@@ -854,7 +1020,7 @@ const Voting = () => {
                                     <img src={logobig} alt="Example" className="home-logo" />
                                 </div>
                                 <div className="confirmation-logo-container2">
-                                    <button onClick={handleLogout}  className="confirmation-buttons2" style={{backgroundColor: '#bf1a00', border: 'none'}}>Exit</button>
+                                    <button onClick={handleExit}  className="confirmation-buttons2" style={{backgroundColor: '#bf1a00', border: 'none'}}>Exit</button>
                                 </div>
                         </div>
                    </div>

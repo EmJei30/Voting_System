@@ -41,12 +41,9 @@ const Authentication = () =>{
 
         const socket = io(`${assignedURL}`);
         socket.on('InsertedVoteRecords', (newRecord) => {
-            console.log('voteRecordssdadas', newRecord)
         });
         
-        socket.on('UpdatedMemberRecord', (newRecord) => {
-            console.log('UpdatedMemberRecord', newRecord)
-            
+        socket.on('UpdatedMemberRecord', (newRecord) => {            
             setMembersInfo(prevData =>
                 prevData.map(record =>
                     record.id === newRecord.id &&  record.Member_Id === newRecord.Member_Id ? { ...newRecord } : record
@@ -54,13 +51,9 @@ const Authentication = () =>{
             );
         });
         socket.on('OpenVotingTransactions',(newRecord) =>{
-            console.log('newRecord',newRecord)
             if(newRecord.length >0){
                 const voteStatus = newRecord.filter(rec => rec.Voting_Status === 'Open');
                 setVoteTransactions(voteStatus)
-                console.log('newRecord',newRecord)
-                // console.log('voteStatus',voteStatus)
-                console.log('voteStatus',voteStatus)
                 localStorage.setItem('VotingPosition', voteStatus[0].Voting_Position);
             }
          
@@ -81,7 +74,6 @@ const Authentication = () =>{
 
         if (isAllDigitsEntered) {
             const concatenatedOTP = OTPCodePerInput.join('');
-            console.log('Concatenated OTP:', concatenatedOTP); // Log the concatenated OTP
             setOTPCode(concatenatedOTP);
         }else{
             setOTPCode('');
@@ -101,7 +93,6 @@ const Authentication = () =>{
             return
         }
         // Handle login logic here
-        // console.log('Logging in with username:', username, 'and password:', password);
         if (OTPCode === 'smart') {
             sessionStorage.setItem('isLoggedIn', true);
             sessionStorage.setItem('usersName', 'smart');
@@ -114,7 +105,6 @@ const Authentication = () =>{
           
             if(memberLoggedIn){
                 const votersValidation = memberLoggedIn.Voting_Status ==='Done' ? true : false;
-                // console.log('votersValidation',votersValidation)
                 if(votersValidation){
                     alert(`OTP already used or done voting...`);
                 }else{
@@ -129,7 +119,6 @@ const Authentication = () =>{
                         sessionStorage.setItem('usersID', memberLoggedIn.Member_Id);
                         sessionStorage.setItem('OTP', OTPCode);
                         setOtpCode(OTPCode);
-                        console.log('OTPCode',OTPCode)
                         setisLoggedIn(true);
                         setUsersName( memberLoggedIn.Member_Name);
                         setUsersID(memberLoggedIn.Member_Id)
@@ -173,14 +162,6 @@ const Authentication = () =>{
     const handleLoginAsAdmin = () =>{
         nav('/administrator');
     }
-    // useEffect(()=>{
-    //     if(VoteTransactions.length > 0){
-    //         const openTransactions  = VoteTransactions.filter( rec => rec.Voting_Status === 'Open')
-    //         console.log('vote transactions',openTransactions);
-    //         setVoteTransactions(openTransactions);
-    //     }
-    // },[])
-
 
     const calculateCountdown = () => {
         if (VoteTransactions && VoteTransactions.length > 0) {
@@ -193,15 +174,9 @@ const Authentication = () =>{
     
             const currentTime = moment();
     
-            // console.log('End Time:', endTime);
-            // console.log('startTime:', startTime);
-            // console.log('Current Time:', currentTime);
-    
             let timeDifference;
             let countdownMessage;
-            // console.log('End Date String:', `${VoteTransactions[0].Voting_End_Date}T${VoteTransactions[0].Voting_End_Time}`);
-            // console.log('Current Date String:', currentTime.format());
-            
+         
             if (currentTime < startTime) {
                 timeDifference = startTime.diff(currentTime, 'seconds');
                 countdownMessage = "Voting starts in:";
@@ -224,7 +199,6 @@ const Authentication = () =>{
             }
     
        
-            // console.log('timeDifference', timeDifference);
             const duration = moment.duration(timeDifference, 'seconds');
             const days = duration.days().toString().padStart(2, '0'); // Ensure two digits with leading zeros
             const hours = duration.hours().toString().padStart(2, '0'); // Ensure two digits with leading zeros
@@ -232,7 +206,6 @@ const Authentication = () =>{
             const seconds = duration.seconds().toString().padStart(2, '0'); // Ensure two digits with leading zeros
             
            const countDown = (countdownMessage);
-           console.log('countDown',countDown)
            setDayTimer(days);
            setHourTimer(hours);
            setMinTimer(minutes);
@@ -245,8 +218,7 @@ const Authentication = () =>{
         }
     };
     
-    
-console.log('VoteTransactions',VoteTransactions)
+
 
     const handleChange = (index, value) => {
         const newOTPCode = [...OTPCodePerInput];
@@ -259,9 +231,7 @@ console.log('VoteTransactions',VoteTransactions)
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    console.log('vote transactions function',data);
-					// const openTransactions  = data.filter( rec => rec.Voting_Status === 'Open')
-					// console.log('vote transactions',openTransactions);
+        
                     localStorage.setItem('VotingPosition', data[0].Voting_Position);
                    setVoteTransactions(data);
                 //    calculateCountdown();

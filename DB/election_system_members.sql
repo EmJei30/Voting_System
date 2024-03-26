@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
--- Host: erp-voting.mysql.database.azure.com    Database: election_system
+-- Host: localhost    Database: election_system
 -- ------------------------------------------------------
--- Server version	8.0.36
+-- Server version	8.0.33
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -41,7 +41,7 @@ CREATE TABLE `members` (
 
 LOCK TABLES `members` WRITE;
 /*!40000 ALTER TABLE `members` DISABLE KEYS */;
-INSERT INTO `members` VALUES (1,'1','Juan Dela Cruz','60251',NULL,NULL,'2024-03-15 13:34:56','2024-03-21 00:03:42'),(2,'2','Pedro Penduco','69863',NULL,NULL,'2024-03-15 13:34:56','2024-03-21 00:03:42'),(3,'3','Cardo Dalisay','10930',NULL,NULL,'2024-03-15 13:34:56','2024-03-21 00:03:42'),(4,'4','Data Smart','46768',NULL,'','2024-03-15 13:34:56','2024-03-20 23:57:14'),(5,'5','Bongbong marcos','81723',NULL,'','2024-03-15 13:34:56','2024-03-20 23:57:14'),(6,'6','Leni Robredo','81349',NULL,'','2024-03-15 13:34:56','2024-03-20 23:57:14'),(7,'7','Sara Duterte','46857',NULL,NULL,'2024-03-15 13:34:56','2024-03-21 00:03:42');
+INSERT INTO `members` VALUES (1,'1','Juan Dela Cruz','60251','14','','2024-03-15 13:34:56','2024-03-21 14:02:44'),(2,'2','Pedro Penduco','69863',NULL,'','2024-03-15 13:34:56','2024-03-21 12:00:32'),(3,'3','Cardo Dalisay','10930','10','','2024-03-15 13:34:56','2024-03-21 14:41:51'),(4,'4','Data Smart','46768','4','','2024-03-15 13:34:56','2024-03-21 12:00:32'),(5,'5','Bongbong marcos','81723',NULL,'','2024-03-15 13:34:56','2024-03-21 12:00:32'),(6,'6','Leni Robredo','81349','9','','2024-03-15 13:34:56','2024-03-21 12:00:32'),(7,'7','Sara Duterte','46857',NULL,'','2024-03-15 13:34:56','2024-03-21 12:00:32');
 /*!40000 ALTER TABLE `members` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-03-21  8:42:01
+-- Dump completed on 2024-03-21 22:48:32
