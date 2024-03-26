@@ -1,15 +1,16 @@
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const router = require('./Router/Router');
+const express = require("express");
+const http = require("http");
+const path = require("path");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const router = require("./Router/Router");
 const app = express();
-const port = 6061;
+const port = 8000;
 const server = http.createServer(app);
-const socketIo = require('socket.io');
+const socketIo = require("socket.io");
 
 const io = socketIo(server, {
+<<<<<<< HEAD
     cors: {
         origin: "*", // Allow requests from any origin
         methods: ["GET", "POST", "PUT", "DELETE"],
@@ -19,37 +20,61 @@ const io = socketIo(server, {
 
 io.on('connection', (socket) => {
     console.log('Client connected');
-
-    // Emit data to client
-    socket.emit('data', { message: 'Initial data' });
-
-    // Handle client disconnect
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
+=======
+  //pass the server, solving some cors issues
+  cors: {
+    //tell the server which server will make the call to our socket.io server
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+  },
 });
+io.on("connection", (socket) => {
+  console.log("Client connected");
+>>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
+
+  // Emit data to client
+  socket.emit("data", { message: "Initial data" });
+
+  // Handle client disconnect
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
+<<<<<<< HEAD
 
 // Middleware to parse JSON and URL-encoded bodies with a limit of 10MB
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+=======
+// Middleware to parse JSON body
+app.use(express.json());
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(bodyParser.json());
+>>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
 
 app.use(cors());
 
 // Middleware to console incoming request
 app.use((req, res, next) => {
-    console.log(req.path, req.method);
-    next();
+  console.log(req.path, req.method);
+  next();
 });
 
 // Route handler
-app.use('/', router);
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use("/", router);
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // Listen for requests
 server.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
 
 module.exports = {
+<<<<<<< HEAD
     io,    // Export the io object so it can be accessed in other files
+=======
+  io, // Export the io object so it can be accessed in other files
+>>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
 };
