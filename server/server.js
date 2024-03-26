@@ -10,28 +10,14 @@ const server = http.createServer(app);
 const socketIo = require("socket.io");
 
 const io = socketIo(server, {
-<<<<<<< HEAD
-    cors: {
-        origin: "*", // Allow requests from any origin
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Authorization", "Content-Type"],
-    },
-});
-
-io.on('connection', (socket) => {
-    console.log('Client connected');
-=======
-  //pass the server, solving some cors issues
   cors: {
-    //tell the server which server will make the call to our socket.io server
-    origin: "*",
+    origin: "*", // Allow requests from any origin
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Authorization", "Content-Type"],
   },
 });
 io.on("connection", (socket) => {
   console.log("Client connected");
->>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
 
   // Emit data to client
   socket.emit("data", { message: "Initial data" });
@@ -41,18 +27,17 @@ io.on("connection", (socket) => {
     console.log("Client disconnected");
   });
 });
-<<<<<<< HEAD
 
 // Middleware to parse JSON and URL-encoded bodies with a limit of 10MB
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-=======
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
 // Middleware to parse JSON body
 app.use(express.json());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(bodyParser.json());
->>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
+
 
 app.use(cors());
 
@@ -72,9 +57,5 @@ server.listen(port, () => {
 });
 
 module.exports = {
-<<<<<<< HEAD
     io,    // Export the io object so it can be accessed in other files
-=======
-  io, // Export the io object so it can be accessed in other files
->>>>>>> 1ea53079c39ac22002421cc8f36d12ea2721440b
 };
