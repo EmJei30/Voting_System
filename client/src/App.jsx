@@ -17,8 +17,8 @@ import WinningCandidates from './Components/WinningCandidates/WinningCandidates'
 
 function App() {
 	// const assignedURL = 'https://evoting-system.azurewebsites.net';
-	// const assignedURL = 'http://192.169.93.52:6061';
-	const assignedURL = 'http://10.0.0.8:6061';
+	const assignedURL = 'http://192.169.93.52:6061';
+	// const assignedURL = 'http://10.0.0.8:6061';
 	const [isLoggedIn, setisLoggedIn] = useState(false);
 	const [usersName, setUsersName] = useState('');
 	const [usersID, setUsersID] = useState('');
